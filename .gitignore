@@ -1,0 +1,30 @@
+# Node.js
+node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# TypeScript
+/dist
+/**/*.js
+/**/*.js.map
+
+# logs
+logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDEs and text editors
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+#.env
+.env
+
+coverage/
