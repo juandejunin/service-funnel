@@ -1,24 +1,36 @@
-import path from 'path';
-import { UsuarioModel } from '../models/user.model';
-import { EmailService } from './email/email.service';
+import path from "path";
+import { Queue } from "bullmq";
+import { UsuarioModel } from "../models/user.model";
+import { EmailService } from "./email/email.service";
+// import { DatabaseError } from '../errors/DatabaseError';
 import jwt from "jsonwebtoken";
 
 class ValidationError extends Error {
   constructor(message: string) {
     super(message);
-    this.name = 'ValidationError';
+    this.name = "ValidationError";
   }
 }
 
 class DatabaseError extends Error {
   constructor(message: string) {
     super(message);
-    this.name = 'DatabaseError';
+    this.name = "DatabaseError";
   }
 }
 
 export class UserService {
-  constructor(private emailService = new EmailService()) { }
+  private emailQueue: Queue;
+
+  constructor(private emailService = new EmailService()) {
+    // Configurar la cola de emails con Redis
+    this.emailQueue = new Queue('emailQueue', {
+      connection: {
+        host: 'localhost', // Ajustar según configuración
+        port: 6379
+      }
+    });
+  }
 
   // Método para manejar solicitudes de usuario
   async processUserRequest(nombre: string, email: string) {
@@ -29,26 +41,22 @@ export class UserService {
       if (usuarioExistente) {
         // Caso 1: Usuario existe pero no está verificado
         if (!usuarioExistente.isVerified) {
-          await this.emailService.sendVerificationEmail(email);
-          return { mensaje: 'Correo de verificación reenviado' };
+          await this.emailQueue.add('sendVerificationEmail', { email });
+          return { mensaje: "Correo de verificación reenviado" };
         }
 
         // Caso 2: Usuario existe y está verificado
-        const filePath = path.join(__dirname, '../files/archivo.pdf'); // Ruta al archivo PDF
-        await this.emailService.sendEmailWithAttachment(
-          email,
-          'Tu archivo adjunto',
-          'Gracias por tu interés. Aquí tienes tu archivo.',
-          filePath
-        );
-        return { mensaje: 'PDF reenviado al usuario verificado' };
+        const filePath = path.join(__dirname, "../files/archivo.pdf"); // Ruta al archivo PDF
+        await this.emailQueue.add('sendFileEmail', { email, filePath });
+        return { mensaje: "PDF reenviado al usuario verificado" };
       }
 
       // Caso 3: Usuario no existe, crear nuevo usuario y enviar correo de verificación
       const nuevoUsuario = new UsuarioModel({ nombre, email });
       try {
         await nuevoUsuario.save(); // Guardar el usuario
-        await this.emailService.sendVerificationEmail(email); // Enviar correo
+        await this.emailQueue.add('sendVerificationEmail', { email });
+
       } catch (error) {
         // Si el envío de correo falla, eliminamos el usuario creado
         if (nuevoUsuario._id) {
@@ -57,15 +65,17 @@ export class UserService {
         throw error; // Repropagar el error
       }
 
-      return { mensaje: 'Usuario registrado y correo de verificación enviado' };
+      return { mensaje: "Usuario registrado y correo de verificación enviado" };
     } catch (error: unknown) {
       if (error instanceof ValidationError) {
         throw error; // Repropagar errores de validación
       }
       if (error instanceof Error) {
-        throw new DatabaseError(`Error al guardar el usuario: ${error.message}`);
+        throw new DatabaseError(
+          `Error al guardar el usuario: ${error.message}`
+        );
       }
-      throw new DatabaseError('Error desconocido al procesar la solicitud');
+      throw new DatabaseError("Error desconocido al procesar la solicitud");
     }
   }
 
@@ -79,7 +89,7 @@ export class UserService {
     try {
       const usuario = await UsuarioModel.findOne({ email });
       if (!usuario) {
-        throw new Error('Usuario no encontrado');
+        throw new Error("Usuario no encontrado");
       }
 
       usuario.nombre = nombre;
@@ -88,9 +98,11 @@ export class UserService {
       return usuario;
     } catch (error: unknown) {
       if (error instanceof Error) {
-        throw new DatabaseError(`Error al actualizar el usuario: ${error.message}`);
+        throw new DatabaseError(
+          `Error al actualizar el usuario: ${error.message}`
+        );
       } else {
-        throw new DatabaseError('Error desconocido al actualizar el usuario');
+        throw new DatabaseError("Error desconocido al actualizar el usuario");
       }
     }
   }
@@ -100,17 +112,19 @@ export class UserService {
     try {
       const usuario = await UsuarioModel.findOne({ email });
       if (!usuario) {
-        throw new Error('Usuario no encontrado');
+        throw new Error("Usuario no encontrado");
       }
 
       await UsuarioModel.findByIdAndDelete(usuario._id);
 
-      return { message: 'Usuario eliminado exitosamente' };
+      return { message: "Usuario eliminado exitosamente" };
     } catch (error: unknown) {
       if (error instanceof Error) {
-        throw new DatabaseError(`Error al eliminar el usuario: ${error.message}`);
+        throw new DatabaseError(
+          `Error al eliminar el usuario: ${error.message}`
+        );
       } else {
-        throw new DatabaseError('Error desconocido al eliminar el usuario');
+        throw new DatabaseError("Error desconocido al eliminar el usuario");
       }
     }
   }
@@ -141,12 +155,12 @@ export class UserService {
       usuario.isVerified = true;
       await usuario.save();
 
-      const filePath = path.join(__dirname, '../files/archivo.pdf'); // Ruta al archivo PDF
+      const filePath = path.join(__dirname, "../files/archivo.pdf"); // Ruta al archivo PDF
 
       await this.emailService.sendEmailWithAttachment(
         usuario.email,
-        'Tu archivo adjunto',
-        'Gracias por verificar tu correo. Aquí tienes tu archivo.',
+        "Tu archivo adjunto",
+        "Gracias por verificar tu correo. Aquí tienes tu archivo.",
         filePath
       );
 
