@@ -166,3 +166,20 @@ Realiza tus cambios.
 Haz commit de tus cambios (git commit -am 'Agregada nueva característica').
 Haz push a tu rama (git push origin feature/nueva-caracteristica).
 Abre un pull request para que tus cambios sean revisados.
+
+
+## Uso de Redis para el envío asincrónico de correos electrónicos
+En este proyecto, hemos integrado Redis para optimizar el proceso de registro de usuarios mediante el envío asincrónico de correos electrónicos. Este enfoque se utiliza para mejorar la velocidad de la creación de usuarios, evitando que el proceso se ralentice al tener que esperar la confirmación del correo de verificación.
+
+### ¿Por qué Redis?
+Al utilizar Redis como una cola de mensajes, podemos enviar los correos electrónicos en segundo plano sin bloquear la creación del usuario. En lugar de esperar que el correo de verificación sea enviado antes de finalizar el registro, ahora se agrega a una cola y se procesa de manera independiente. Esto reduce considerablemente el tiempo que tarda en completarse el proceso de registro, mejorando la experiencia del usuario y la eficiencia del sistema.
+
+### Funcionamiento
+Registro de usuario: Cuando un nuevo usuario se registra, sus datos se guardan en la base de datos.
+Encolado del correo electrónico: El envío del correo de verificación se agrega a una cola de Redis.
+Procesamiento asincrónico: Un trabajador de Redis toma los correos electrónicos pendientes de la cola y los envía de manera asincrónica.
+Confirmación del correo: El correo de verificación se envía sin afectar el proceso de registro del usuario, que se completa de inmediato.
+Beneficios
+Reducción de latencia: La creación del usuario es más rápida al no depender del envío del correo electrónico.
+Escalabilidad: El sistema puede manejar un mayor volumen de registros y correos electrónicos sin afectar el rendimiento.
+Mejora en la experiencia del usuario: Los usuarios no tienen que esperar largos períodos para completar el registro, ya que el proceso se maneja de forma más eficiente.
