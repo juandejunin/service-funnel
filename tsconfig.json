@@ -5,7 +5,14 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "strict": true,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "baseUrl": "./src",
+    "paths": {
+      "@services/*": ["services/*"],
+      "@controllers/*": ["controllers/*"], 
+      "@utils/*": ["utils/*"],
+      "@files/*":["files/*"]
+    }
   },
   "include": ["src/**/*.ts", "src/services/email/emailWorker.ts"],
   "exclude": ["node_modules"]
