@@ -177,7 +177,7 @@ Al utilizar Redis como una cola de mensajes, podemos enviar los correos electró
 ### Funcionamiento
 Registro de usuario: Cuando un nuevo usuario se registra, sus datos se guardan en la base de datos.
 Encolado del correo electrónico: El envío del correo de verificación se agrega a una cola de Redis.
-Procesamiento asincrónico: Un trabajador de Redis toma los correos electrónicos pendientes de la cola y los envía de manera asincrónica.
+Procesamiento asincrónico: Un worker de Redis toma los correos electrónicos pendientes de la cola y los envía de manera asincrónica.
 Confirmación del correo: El correo de verificación se envía sin afectar el proceso de registro del usuario, que se completa de inmediato.
 Beneficios
 Reducción de latencia: La creación del usuario es más rápida al no depender del envío del correo electrónico.
