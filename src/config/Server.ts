@@ -4,6 +4,7 @@ import path from 'path';
 import { connectToDatabase } from './database';
 import swaggerUi from 'swagger-ui-express';
 import swaggerSpecs from './swagger.config'; // Importa la configuración de Swagger
+import { startEmailWorker } from '../workers/email.worker'; 
 
 class Server {
 
@@ -41,6 +42,8 @@ class Server {
     public async listen() {
         // Intentamos conectar a la base de datos antes de iniciar el servidor
         await connectToDatabase();
+
+        startEmailWorker(); // 🔹 Iniciar el worker después de la conexión
 
         // Levantamos el servidor
         this.app.listen(this.port, () => {

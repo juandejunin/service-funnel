@@ -1,7 +1,7 @@
 import path from "path";
 import { Queue } from "bullmq";
-import { UsuarioModel } from "../models/user.model";
-import { EmailService } from "./email/email.service";
+import { UsuarioModel } from "../../models/user.model";
+import { EmailService } from "../email/email.service";
 // import { DatabaseError } from '../errors/DatabaseError';
 import jwt from "jsonwebtoken";
 
@@ -46,7 +46,7 @@ export class UserService {
         }
 
         // Caso 2: Usuario existe y está verificado
-        const filePath = path.join(__dirname, "../files/archivo.pdf"); // Ruta al archivo PDF
+        const filePath = path.join(__dirname, "../../files/archivo.pdf"); // Ruta al archivo PDF
         await this.emailQueue.add('sendFileEmail', { email, filePath });
         return { mensaje: "PDF reenviado al usuario verificado" };
       }
@@ -130,39 +130,66 @@ export class UserService {
   }
 
   // Método para verificar el email del usuario
+  // async verifyUserEmail(token: string) {
+  //   try {
+  //     const secretKey = process.env.JWT_SECRET_KEY;
+
+  //     if (!secretKey) {
+  //       throw new Error("La clave secreta JWT no está configurada.");
+  //     }
+
+  //     // Decodificar el token para obtener el email
+  //     const decoded = jwt.verify(token, secretKey) as { email: string };
+
+  //     const usuario = await UsuarioModel.findOne({ email: decoded.email });
+  //     if (!usuario) {
+  //       throw new Error("Usuario no encontrado");
+  //     }
+
+  //     // Verificar si ya está verificado
+  //     if (usuario.isVerified) {
+  //       return { verificado: true, mensaje: "El usuario ya estaba verificado" };
+  //     }
+
+  //     // Actualizar el estado de verificación
+  //     usuario.isVerified = true;
+  //     await usuario.save();
+
+  //     const filePath = path.join(__dirname, "../files/archivo.pdf"); // Ruta al archivo PDF
+
+  //     await this.emailService.sendEmailWithAttachment(
+  //       usuario.email,
+  //       "Tu archivo adjunto",
+  //       "Gracias por verificar tu correo. Aquí tienes tu archivo.",
+  //       filePath
+  //     );
+
+  //     return { verificado: true, mensaje: "Email verificado correctamente" };
+  //   } catch (error: unknown) {
+  //     if (error instanceof jwt.JsonWebTokenError) {
+  //       return { verificado: false, mensaje: "Token inválido o expirado" };
+  //     }
+  //     throw error;
+  //   }
+  // }
   async verifyUserEmail(token: string) {
     try {
       const secretKey = process.env.JWT_SECRET_KEY;
-
       if (!secretKey) {
         throw new Error("La clave secreta JWT no está configurada.");
       }
 
-      // Decodificar el token para obtener el email
       const decoded = jwt.verify(token, secretKey) as { email: string };
-
       const usuario = await UsuarioModel.findOne({ email: decoded.email });
-      if (!usuario) {
-        throw new Error("Usuario no encontrado");
-      }
 
-      // Verificar si ya está verificado
-      if (usuario.isVerified) {
-        return { verificado: true, mensaje: "El usuario ya estaba verificado" };
-      }
+      if (!usuario) throw new Error("Usuario no encontrado");
+      if (usuario.isVerified) return { verificado: true, mensaje: "El usuario ya estaba verificado" };
 
-      // Actualizar el estado de verificación
       usuario.isVerified = true;
       await usuario.save();
 
-      const filePath = path.join(__dirname, "../files/archivo.pdf"); // Ruta al archivo PDF
-
-      await this.emailService.sendEmailWithAttachment(
-        usuario.email,
-        "Tu archivo adjunto",
-        "Gracias por verificar tu correo. Aquí tienes tu archivo.",
-        filePath
-      );
+      const filePath = path.join(__dirname, '../files/archivo.pdf');
+      await this.emailQueue.add('sendFileEmail', { email: usuario.email, filePath });
 
       return { verificado: true, mensaje: "Email verificado correctamente" };
     } catch (error: unknown) {
