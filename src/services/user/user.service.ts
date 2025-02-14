@@ -26,8 +26,8 @@ export class UserService {
     // Configurar la cola de emails con Redis
     this.emailQueue = new Queue('emailQueue', {
       connection: {
-        host: 'localhost', // Ajustar según configuración
-        port: 6379
+        host: process.env.REDIS_HOST || 'redis',// Ajustar según configuración
+        port: parseInt(process.env.REDIS_PORT || '6379', 10)
       }
     });
   }
@@ -35,7 +35,7 @@ export class UserService {
   // Método para manejar solicitudes de usuario
   async processUserRequest(nombre: string, email: string) {
     try {
-      // Buscar si el usuario ya existe en la base de datos
+      // Buscar si el usuario ya existe en la a de datos
       const usuarioExistente = await UsuarioModel.findOne({ email });
 
       if (usuarioExistente) {
