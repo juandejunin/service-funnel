@@ -4,24 +4,26 @@ services:
   redis:
     image: redis:latest
     container_name: redis_service
-    ports:
-      - "6379:6379"   # Expone el puerto 6379 del contenedor
+    command: redis-server --requirepass ${REDIS_PASSWORD}  # Usa la variable de entorno
     networks:
-      - app_network
-
+      - internal_net
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}  # Define la variable de entorno en el servicio Redis
+  
   backend:
     build: .
     container_name: backend_service
     ports:
-      - "3000:3000"   # Expone el puerto 3000 del backend
+      - "3000:3000"
     environment:
-      REDIS_HOST: redis   # Variable de entorno que indica el nombre del servicio redis
+      REDIS_HOST: redis
       REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}  # Usa la variable de entorno también en el backend
     depends_on:
-      - redis   # Asegura que el servicio redis esté levantado antes de backend
+      - redis
     networks:
-      - app_network
+      - internal_net
 
 networks:
-  app_network:
+  internal_net:
     driver: bridge

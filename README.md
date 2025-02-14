@@ -23,33 +23,8 @@ El código está organizado siguiendo el paradigma de Programación Orientada a 
 - **UserModel**: Representa el modelo de datos del usuario para la base de datos MongoDB.
 
 ### Estructura de Carpetas
-my-project/
-│
-├── public/                     # Archivos públicos (HTML, CSS, JS)
-│   ├── assets/                 # Archivos de recursos estáticos (imagenes, videos, etc.)
-│   ├── css/                    # Archivos CSS
-│   ├── js/                     # Archivos JS
-│   └── index.html              # Página de inicio
-│
-├── src/                        # Código fuente del back-end
-│   ├── config/                 # Configuración de la base de datos y variables
-│   │   └── database.ts         # Configuración de la base de datos
-│   ├── controllers/            # Controladores para manejar las rutas
-│   │   └── user.controller.ts  # Controlador de usuarios
-│   ├── middlewares/            # Middlewares de validación y sanitización
-│   │   └── validation.middleware.ts  # Validación del registro de usuario
-│   ├── models/                 # Modelos de Mongoose
-│   │   └── user.model.ts       # Modelo de usuario con Mongoose
-│   ├── routes/                 # Rutas del proyecto
-│   │   └── user.routes.ts      # Rutas de usuario (registro, login, etc.)
-│   ├── services/               # Servicios para manejar la lógica de negocio
-│   │   └── user.service.ts     # Lógica de negocio para usuarios
-│   └── index.ts                # Archivo principal para arrancar el servidor
-│
-└── test/                       # Archivos de pruebas
-    ├── user.test.ts            # Pruebas de la lógica de usuario
-    └── ...                     # Otras pruebas
 
+![Descripción de la imagen](https://github.com/juandejunin/service-funnel.git/docs/folders.png)
 
 ## Funcionalidades
 
@@ -75,28 +50,35 @@ my-project/
 ```
    node -v
 ```
+
 2. **MongoDB**: Necesitarás una base de datos MongoDB en funcionamiento. Si no tienes una local, puedes usar MongoDB Atlas.
 
 3. **TypeScript**: El proyecto está escrito en TypeScript, así que necesitas tener instalado TypeScript globalmente:
+
 ```
 npm install -g typescript
 ```
+
 ## Pasos para instalar y ejecutar el proyecto
 
 1. Clona este repositorio:
-``` 
-git clone https://github.com/tuusuario/tu-repositorio.git
- ```
 
- 2. Navega al directorio del proyecto:
- ```
- cd tu-repositorio
- ```
+```
+git clone https://github.com/tuusuario/tu-repositorio.git
+```
+
+2.  Navega al directorio del proyecto:
+
+```
+cd tu-repositorio
+```
+
 3. Instala las dependencias:
 
 ```
 npm install
 ```
+
 4. Crea un archivo .env en la raíz del proyecto con las siguientes variables de entorno:
 
 ```
@@ -109,15 +91,19 @@ PORT=3000
 ```
 tsc
 ```
+
 6. Inicia el servidor:
+
 ```
 npm start
 ```
+
 ## Rutas
 
 POST /api/users/register: Registra un nuevo usuario proporcionando un JSON con los campos nombre y email.
 
 Ejemplo de solicitud:
+
 ```
 {
   "nombre": "Juan Pérez",
@@ -137,6 +123,47 @@ Respuesta de éxito:
   }
 }
 ```
+
+## Configuración de Docker
+
+Este proyecto utiliza Docker para simplificar la configuración y despliegue de la aplicación. Docker nos permite contenerizar tanto el servicio backend como el servicio de Redis, asegurando consistencia en diferentes entornos.
+
+### ¿Por qué usamos Docker?
+
+Consistencia del entorno: Docker asegura que la aplicación se ejecute de la misma manera en diferentes entornos (desarrollo, producción, etc.) sin tener que preocuparnos por las dependencias o configuraciones.
+Despliegue simplificado: Al usar Docker Compose, podemos gestionar y levantar tanto el servicio backend como el servicio de Redis con un solo comando.
+Aislamiento: Los contenedores de Docker nos permiten aislar los servicios, haciendo el proceso de desarrollo más limpio y manejable.
+Cómo levantar el servidor con Docker:
+Asegúrate de tener Docker instalado: Asegúrate de que Docker esté instalado en tu sistema. Puedes verificar si Docker está instalado ejecutando:
+
+```
+docker --version
+```
+
+Construir y levantar los servicios: Navega al directorio del proyecto y usa Docker Compose para construir y levantar los servicios de backend y Redis. Ejecuta el siguiente comando:
+
+```
+docker-compose up --build
+```
+
+Esto hará lo siguiente:
+
+Construir las imágenes Docker para los servicios de backend y Redis (si no están construidas previamente).
+Levantar los contenedores para ambos servicios.
+Exponer el backend en el puerto 3000 y Redis en el puerto 6379.
+Acceder al backend: Una vez que los servicios estén en funcionamiento, puedes acceder a la API del backend navegando a:
+
+```
+http://localhost:3000
+```
+
+Detener los servicios: Para detener los servicios en ejecución, usa el siguiente comando:
+
+```
+docker-compose down
+```
+
+Esto detendrá y eliminará los contenedores, redes y volúmenes creados por Docker Compose.
 
 ## Medidas de Seguridad
 
@@ -167,14 +194,16 @@ Haz commit de tus cambios (git commit -am 'Agregada nueva característica').
 Haz push a tu rama (git push origin feature/nueva-caracteristica).
 Abre un pull request para que tus cambios sean revisados.
 
-
 ## Uso de Redis para el envío asincrónico de correos electrónicos
+
 En este proyecto, hemos integrado Redis para optimizar el proceso de registro de usuarios mediante el envío asincrónico de correos electrónicos. Este enfoque se utiliza para mejorar la velocidad de la creación de usuarios, evitando que el proceso se ralentice al tener que esperar la confirmación del correo de verificación.
 
 ### ¿Por qué Redis?
+
 Al utilizar Redis como una cola de mensajes, podemos enviar los correos electrónicos en segundo plano sin bloquear la creación del usuario. En lugar de esperar que el correo de verificación sea enviado antes de finalizar el registro, ahora se agrega a una cola y se procesa de manera independiente. Esto reduce considerablemente el tiempo que tarda en completarse el proceso de registro, mejorando la experiencia del usuario y la eficiencia del sistema.
 
 ### Funcionamiento
+
 Registro de usuario: Cuando un nuevo usuario se registra, sus datos se guardan en la base de datos.
 Encolado del correo electrónico: El envío del correo de verificación se agrega a una cola de Redis.
 Procesamiento asincrónico: Un trabajador de Redis toma los correos electrónicos pendientes de la cola y los envía de manera asincrónica.
@@ -183,3 +212,89 @@ Beneficios
 Reducción de latencia: La creación del usuario es más rápida al no depender del envío del correo electrónico.
 Escalabilidad: El sistema puede manejar un mayor volumen de registros y correos electrónicos sin afectar el rendimiento.
 Mejora en la experiencia del usuario: Los usuarios no tienen que esperar largos períodos para completar el registro, ya que el proceso se maneja de forma más eficiente.
+
+## Medidas de Seguridad Implementadas en Docker y Redis
+
+Este proyecto utiliza Docker para contenerizar los servicios y Redis como sistema de colas para tareas en segundo plano, como el envío de correos electrónicos. Para garantizar la seguridad de Redis y prevenir accesos no autorizados, se implementaron varias medidas clave en la configuración del entorno Docker.
+
+### 1. Red Interna de Docker
+
+Para limitar el acceso a los servicios dentro de los contenedores, se configuró una red interna de Docker. Esto asegura que solo los servicios que forman parte de la misma red puedan comunicarse entre sí, evitando accesos externos a servicios como Redis.
+En el archivo docker-compose.yml, se definió la red interna como sigue:
+
+```
+networks:
+  internal_net:
+    driver: bridge
+```
+
+Ambos servicios (Redis y backend) están conectados a esta red interna, lo que restringe su comunicación únicamente dentro de este entorno.
+
+### 2. Contraseña para Redis
+
+Redis fue configurado para requerir autenticación antes de permitir cualquier operación. Esta medida agrega una capa de seguridad para prevenir el uso no autorizado de Redis, lo que podría ser aprovechado para realizar acciones maliciosas, como el envío de correos fraudulentos.
+
+En el archivo docker-compose.yml, se añadió la configuración de la contraseña para Redis:
+
+```
+redis:
+  image: redis:latest
+  container_name: redis_service
+  command: redis-server --requirepass ${REDIS_PASSWORD}
+  networks:
+    - internal_net
+```
+
+La contraseña se define mediante una variable de entorno REDIS_PASSWORD, la cual se carga en el entorno del contenedor para garantizar que Redis no acepte conexiones sin autenticación.
+
+### 3. Configuración del Código para Uso de Variables de Entorno
+
+Para evitar que las credenciales se encuentren directamente en el código, se configuraron variables de entorno para que el backend y el worker utilicen el nombre del servicio, el puerto y la contraseña de Redis de manera segura:
+
+```
+this.emailQueue = new Queue('emailQueue', {
+  connection: {
+    host: process.env.REDIS_HOST || 'localhost',
+    port: Number(process.env.REDIS_PORT) || 6379,
+    password: process.env.REDIS_PASSWORD || undefined
+  }
+});
+```
+
+De este modo, el código puede acceder a Redis de manera segura sin tener que hardcodear las credenciales, y las variables de entorno se configuran automáticamente al iniciar el contenedor.
+
+### 4. Evitar Exposición del Puerto REDIS
+
+Para evitar que el puerto de Redis esté accesible desde fuera del contenedor, se eliminó la sección ports del servicio Redis en el archivo docker-compose.yml:
+
+```
+redis:
+  image: redis:latest
+  container_name: redis_service
+  networks:
+    - internal_net
+  command: redis-server --requirepass ${REDIS_PASSWORD}
+```
+
+De esta forma, Redis solo está disponible para otros servicios dentro de la red interna de Docker, y no es accesible desde el exterior. Esto reduce el riesgo de que un atacante pueda intentar conectarse a Redis directamente a través de la red pública.
+
+### 5. Configuración de Redis para Aceptar Solo Conexiones Internas
+
+Se configuró Redis para que solo acepte conexiones de localhost o de la red interna de Docker. Esto se hace agregando la siguiente configuración en el archivo redis.conf (que puede ser modificado al montar el archivo dentro del contenedor):
+
+```
+bind 127.0.0.1 ::1
+requirepass ${REDIS_PASSWORD}
+```
+
+Esto asegura que Redis no escuche en direcciones IP externas, lo que agrega una capa adicional de seguridad al restringir las conexiones solo a los contenedores de Docker.
+
+### 6. Autenticación de Redis en el Backend y Worker
+
+Con la configuración anterior, cualquier intento de acceder a Redis sin la autenticación adecuada generará un error, como el siguiente:
+
+```
+ReplyError: NOAUTH Authentication required
+```
+
+Esto es una señal de que la seguridad está funcionando correctamente, ya que Redis requiere que los servicios proporcionen la contraseña correctamente antes de permitir cualquier operación.
