@@ -24,7 +24,7 @@ El código está organizado siguiendo el paradigma de Programación Orientada a 
 
 ### Estructura de Carpetas
 
-![Descripción de la imagen](https://github.com/juandejunin/service-funnel.git/docs/folders.png)
+![Descripción de la imagen](https://github.com/juandejunin/service-funnel/blob/main/docs/folders.png)
 
 ## Funcionalidades
 
