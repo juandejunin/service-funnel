@@ -22,8 +22,8 @@ export function startEmailWorker() {
     }
   }, {
     connection: {
-      host: 'localhost',
-      port: 6379
+      host: process.env.REDIS_HOST || 'redis',// Ajustar según configuración
+      port: parseInt(process.env.REDIS_PORT || '6379', 10)
     }
   });
 
