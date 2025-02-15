@@ -139,22 +139,30 @@ export class UserService {
   //       throw new Error("La clave secreta JWT no está configurada.");
   //     }
 
+
+
+
+
   //     // Decodificar el token para obtener el email
   //     const decoded = jwt.verify(token, secretKey) as { email: string };
 
   //     const usuario = await UsuarioModel.findOne({ email: decoded.email });
+
+
   //     if (!usuario) {
   //       throw new Error("Usuario no encontrado");
   //     }
 
+
+
   //     // Verificar si ya está verificado
-  //     if (usuario.isVerified) {
-  //       return { verificado: true, mensaje: "El usuario ya estaba verificado" };
-  //     }
+  //     if (usuario.isVerified) { return { verificado: true, mensaje: "El usuario ya estaba verificado" } }
 
   //     // Actualizar el estado de verificación
   //     usuario.isVerified = true;
   //     await usuario.save();
+
+
 
   //     const filePath = path.join(__dirname, "../files/archivo.pdf"); // Ruta al archivo PDF
 
@@ -180,16 +188,22 @@ export class UserService {
         throw new Error("La clave secreta JWT no está configurada.");
       }
 
+       // Decodificar el token para obtener el email
       const decoded = jwt.verify(token, secretKey) as { email: string };
       const usuario = await UsuarioModel.findOne({ email: decoded.email });
 
       if (!usuario) throw new Error("Usuario no encontrado");
+
+      // Verificar si ya está verificado
       if (usuario.isVerified) return { verificado: true, mensaje: "El usuario ya estaba verificado" };
 
+      // Actualizar el estado de verificación
       usuario.isVerified = true;
       await usuario.save();
 
-      const filePath = path.join(__dirname, '../files/archivo.pdf');
+
+      //const filePath = path.join(__dirname, "../files/archivo.pdf"); // Ruta al archivo PDF
+      const filePath = path.join(__dirname, '../../files/archivo.pdf');
       await this.emailQueue.add('sendFileEmail', { email: usuario.email, filePath });
 
       return { verificado: true, mensaje: "Email verificado correctamente" };
