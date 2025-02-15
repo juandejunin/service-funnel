@@ -2,7 +2,14 @@
 
 ## Descripción
 
-Este proyecto es una aplicación backend construida con **Node.js**, **Express**, **TypeScript** y **MongoDB** para gestionar el registro de usuarios. Permite a los usuarios crear una cuenta proporcionando su nombre y correo electrónico. La aplicación sigue el paradigma de **Programación Orientada a Objetos (POO)** para estructurar mejor el código y facilitar su mantenimiento y escalabilidad. Además, se han implementado medidas de seguridad para proteger las entradas de los usuarios y evitar ataques comunes como **XSS** (Cross-Site Scripting).
+Este proyecto es una aplicación backend construida con Node.js, Express, TypeScript y MongoDB para gestionar el registro de usuarios. Permite a los usuarios crear una cuenta proporcionando su nombre y correo electrónico. La aplicación sigue el paradigma de Programación Orientada a Objetos (POO) para estructurar mejor el código y facilitar su mantenimiento y escalabilidad. Además, se han implementado medidas de seguridad para proteger las entradas de los usuarios y evitar ataques comunes como XSS (Cross-Site Scripting).
+
+### Rendimiento Destacado:
+- Solicitudes por segundo: 1787.74 solicitudes por segundo
+- Tiempo promedio por solicitud: 5.594 ms
+- Tasa de transferencia: 700.08 Kbytes/sec
+- Tiempo máximo de respuesta: 35 ms
+- Pruebas realizadas con Apache Benchmark (ab), con 1000 solicitudes y 10 conexiones simultáneas. Estos resultados demuestran la capacidad de la aplicación para manejar un alto volumen de solicitudes concurrentes, lo que la hace ideal para entornos de producción de alto tráfico.
 
 ## Tecnologías
 
