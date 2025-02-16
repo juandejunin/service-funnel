@@ -18,7 +18,7 @@ export class UserController {
     const { nombre, email } = req.body;
     try {
       const usuario = await this.userService.createUser(nombre, email);
-      res.status(201).json({ mensaje: 'Usuario registrado correctamente', usuario });
+      res.status(201).json({ mensaje: '¡Gracias por registrarte! Hemos enviado un correo electrónico con las indicaciones para completar tu registro. Por favor, revisa tu bandeja de entrada (y también la carpeta de spam).', usuario });
     } catch (error: unknown) {
       // Comprobamos si el error es una instancia de Error
       if (error instanceof Error) {
@@ -39,30 +39,22 @@ export class UserController {
         success: false,
         message: "Token is required"
       });
-      return;
+      
     }
 
     try {
       const result = await this.userService.verifyUserEmail(token as string);
 
       if (result.verificado) {
-        res.status(200).json({
-          success: true,
-          message: "Email verified successfully"
-        });
+        const redirectUrl = result.redirectUrl ?? `${process.env.FRONTEND_URL}/error`;
+        return res.redirect(redirectUrl);
       } else {
-        res.status(400).json({
-          success: false,
-          message: "Invalid or expired token"
-        });
+         return res.redirect(`${process.env.FRONTEND_URL}/error`);
       }
     } catch (error: unknown) {
       console.error("Error verifying email:", error);
 
-      res.status(500).json({
-        success: false,
-        message: "Internal server error"
-      });
+      return res.redirect(`${process.env.FRONTEND_URL}/error`);
     }
   }
 
