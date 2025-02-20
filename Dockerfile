@@ -16,6 +16,9 @@ COPY . .
 # Compilamos TypeScript (si es necesario)
 RUN npm run build
 
+# Copiar la carpeta "files" a "dist/files"
+RUN mkdir -p dist/files && cp -r src/files/* dist/files/
+
 # Exponemos el puerto 3000 del backend
 EXPOSE 3000
 

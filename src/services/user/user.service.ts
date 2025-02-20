@@ -24,12 +24,12 @@ export class UserService {
 
   constructor(private emailService = new EmailService()) {
     // Configurar la cola de emails con Redis
-    this.emailQueue = new Queue('emailQueue', {
+    this.emailQueue = new Queue("emailQueue", {
       connection: {
-        host: process.env.REDIS_HOST || 'redis',// Ajustar según configuración
-        port: parseInt(process.env.REDIS_PORT || '6379', 10),
-        password: process.env.REDIS_PASSWORD || undefined
-      }
+        host: process.env.REDIS_HOST || "redis", // Ajustar según configuración
+        port: parseInt(process.env.REDIS_PORT || "6379", 10),
+        password: process.env.REDIS_PASSWORD || undefined,
+      },
     });
   }
 
@@ -38,26 +38,35 @@ export class UserService {
     try {
       // Buscar si el usuario ya existe en la a de datos
       const usuarioExistente = await UsuarioModel.findOne({ email });
-
       if (usuarioExistente) {
         // Caso 1: Usuario existe pero no está verificado
         if (!usuarioExistente.isVerified) {
-          await this.emailQueue.add('sendVerificationEmail', { email });
+          // Si el nombre ha cambiado, actualizamos el nombre también
+          if (usuarioExistente.nombre !== nombre) {
+            usuarioExistente.nombre = nombre;
+            await usuarioExistente.save();
+          }
+          await this.emailQueue.add("sendVerificationEmail", { email });
           return { mensaje: "Correo de verificación reenviado" };
         }
 
         // Caso 2: Usuario existe y está verificado
+        if (usuarioExistente.nombre !== nombre) {
+          // Si el nombre ha cambiado, actualizamos el nombre
+          usuarioExistente.nombre = nombre;
+          await usuarioExistente.save();
+          return { mensaje: "Nombre actualizado y PDF reenviado" };
+        }
+
         const filePath = path.join(__dirname, "../../files/archivo.pdf"); // Ruta al archivo PDF
-        await this.emailQueue.add('sendFileEmail', { email, filePath });
+        await this.emailQueue.add("sendFileEmail", { email, filePath });
         return { mensaje: "PDF reenviado al usuario verificado" };
       }
-
       // Caso 3: Usuario no existe, crear nuevo usuario y enviar correo de verificación
       const nuevoUsuario = new UsuarioModel({ nombre, email });
       try {
         await nuevoUsuario.save(); // Guardar el usuario
-        await this.emailQueue.add('sendVerificationEmail', { email });
-
+        await this.emailQueue.add("sendVerificationEmail", { email });
       } catch (error) {
         // Si el envío de correo falla, eliminamos el usuario creado
         if (nuevoUsuario._id) {
@@ -139,21 +148,14 @@ export class UserService {
   //       throw new Error("La clave secreta JWT no está configurada.");
   //     }
 
-
-
-
-
   //     // Decodificar el token para obtener el email
   //     const decoded = jwt.verify(token, secretKey) as { email: string };
 
   //     const usuario = await UsuarioModel.findOne({ email: decoded.email });
 
-
   //     if (!usuario) {
   //       throw new Error("Usuario no encontrado");
   //     }
-
-
 
   //     // Verificar si ya está verificado
   //     if (usuario.isVerified) { return { verificado: true, mensaje: "El usuario ya estaba verificado" } }
@@ -161,8 +163,6 @@ export class UserService {
   //     // Actualizar el estado de verificación
   //     usuario.isVerified = true;
   //     await usuario.save();
-
-
 
   //     const filePath = path.join(__dirname, "../files/archivo.pdf"); // Ruta al archivo PDF
 
@@ -188,25 +188,32 @@ export class UserService {
         throw new Error("La clave secreta JWT no está configurada.");
       }
 
-       // Decodificar el token para obtener el email
+      // Decodificar el token para obtener el email
       const decoded = jwt.verify(token, secretKey) as { email: string };
       const usuario = await UsuarioModel.findOne({ email: decoded.email });
 
       if (!usuario) throw new Error("Usuario no encontrado");
 
       // Verificar si ya está verificado
-      if (usuario.isVerified) return { verificado: true, mensaje: "El usuario ya estaba verificado" };
+      if (usuario.isVerified)
+        return { verificado: true, mensaje: "El usuario ya estaba verificado" };
 
       // Actualizar el estado de verificación
       usuario.isVerified = true;
       await usuario.save();
 
-
       //const filePath = path.join(__dirname, "../files/archivo.pdf"); // Ruta al archivo PDF
-      const filePath = path.join(__dirname, '../../files/archivo.pdf');
-      await this.emailQueue.add('sendFileEmail', { email: usuario.email, filePath });
+      const filePath = path.join(__dirname, "../../files/archivo.pdf");
+      await this.emailQueue.add("sendFileEmail", {
+        email: usuario.email,
+        filePath,
+      });
 
-      return { verificado: true, mensaje: "Email verificado correctamente" };
+      return {
+        verificado: true,
+        mensaje: "Email verificado correctamente",
+        redirectUrl: `${process.env.FRONTEND_URL}/success`,
+      };
     } catch (error: unknown) {
       if (error instanceof jwt.JsonWebTokenError) {
         return { verificado: false, mensaje: "Token inválido o expirado" };
