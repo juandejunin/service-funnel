@@ -115,6 +115,7 @@ export class EmailService {
   private transporter;
 
   constructor() {
+    console.log("este es el node: ",process.env.NODE_ENV)
     if (process.env.NODE_ENV === "production") {
       this.transporter = nodemailer.createTransport({
         host: "smtp.gmail.com",

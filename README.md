@@ -89,8 +89,31 @@ npm install
 4. Crea un archivo .env en la raíz del proyecto con las siguientes variables de entorno:
 
 ```
-MONGO_URI=mongodb://localhost:27017/tu_base_de_datos
-PORT=3000
+NODE_ENV=
+
+PORT=xxxx
+
+MONGODB_URI=mongodb+srv://usuario:contraseña@xxxxxxxxxxxxxxxx
+
+EMAIL_USER=xxxxxxxx@xxxx.xxxxxxxx
+
+EMAIL_PASSWORD=xxxx xxxx xxxx xxxx
+
+
+JWT_SECRET_KEY=xxxxxxxxxxxxxxxxxxxxxx
+
+BASE_URL=http://localhost:xxxx
+
+BASE_HOST=localhost
+
+REDIS_HOST=redis
+REDIS_PORT=xxxx
+REDIS_PASSWORD= xxxxxxxxxxxxxxxxxxxxxxxxxx
+
+ETHEREAL_USER=xxxxxxxxxxxxxxxxxxxx@ethereal.email
+ETHEREAL_PASS=xxxxxxxxxxxxxxxxxxxx
+
+FRONTEND_URL=http://localhost:xxxx 
 ```
 
 5. Compila los archivos TypeScript:
@@ -114,7 +137,8 @@ Ejemplo de solicitud:
 ```
 {
   "nombre": "Juan Pérez",
-  "email": "juan.perez@example.com"
+  "email": "juanperez@mail.com",
+  "acepta_politicas":true
 }
 ```
 
@@ -122,12 +146,10 @@ Respuesta de éxito:
 
 ```
 {
-  "mensaje": "Usuario registrado correctamente",
-  "usuario": {
-    "nombre": "Juan Pérez",
-    "email": "juan.perez@example.com",
-    "_id": "60d6f7b9c5d1e520f836e8a9"
-  }
+    "mensaje": "¡Gracias por registrarte! Hemos enviado un correo electrónico con las indicaciones para completar tu registro. Por favor, revisa tu bandeja de entrada (y también la carpeta de spam).",
+    "usuario": {
+        "mensaje": "Usuario registrado y correo de verificación enviado"
+    }
 }
 ```
 

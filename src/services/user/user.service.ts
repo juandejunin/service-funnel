@@ -38,20 +38,30 @@ export class UserService {
     try {
       // Buscar si el usuario ya existe en la a de datos
       const usuarioExistente = await UsuarioModel.findOne({ email });
-
       if (usuarioExistente) {
         // Caso 1: Usuario existe pero no está verificado
         if (!usuarioExistente.isVerified) {
+          // Si el nombre ha cambiado, actualizamos el nombre también
+          if (usuarioExistente.nombre !== nombre) {
+            usuarioExistente.nombre = nombre;
+            await usuarioExistente.save();
+          }
           await this.emailQueue.add("sendVerificationEmail", { email });
           return { mensaje: "Correo de verificación reenviado" };
         }
 
         // Caso 2: Usuario existe y está verificado
+        if (usuarioExistente.nombre !== nombre) {
+          // Si el nombre ha cambiado, actualizamos el nombre
+          usuarioExistente.nombre = nombre;
+          await usuarioExistente.save();
+          return { mensaje: "Nombre actualizado y PDF reenviado" };
+        }
+
         const filePath = path.join(__dirname, "../../files/archivo.pdf"); // Ruta al archivo PDF
         await this.emailQueue.add("sendFileEmail", { email, filePath });
         return { mensaje: "PDF reenviado al usuario verificado" };
       }
-
       // Caso 3: Usuario no existe, crear nuevo usuario y enviar correo de verificación
       const nuevoUsuario = new UsuarioModel({ nombre, email });
       try {
@@ -202,7 +212,7 @@ export class UserService {
       return {
         verificado: true,
         mensaje: "Email verificado correctamente",
-        redirectUrl: `${process.env.FRONTEND_URL}/success`
+        redirectUrl: `${process.env.FRONTEND_URL}/success`,
       };
     } catch (error: unknown) {
       if (error instanceof jwt.JsonWebTokenError) {
