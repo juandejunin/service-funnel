@@ -11,10 +11,14 @@ const swaggerOptions = {
     },
     servers: [
       { url: process.env.BASE_URL },
+      
     ],
   },
-  apis: [path.join(__dirname, '../routes/user.routes.ts')], // Ruta absoluta
+  apis: [path.join(__dirname, '../routes/user.routes.js')], // Ruta absoluta
 };
+
+console.log('Swagger BASE_URL:', process.env.BASE_URL);
+
 
 const swaggerSpecs = swaggerJsdoc(swaggerOptions);
 
