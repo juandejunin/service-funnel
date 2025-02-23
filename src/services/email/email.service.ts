@@ -1,111 +1,3 @@
-// import nodemailer from 'nodemailer';
-// import { generateToken } from '../../utils/jwt.utils';
-// import path from 'path';
-// import fs from 'fs';
-
-// export class EmailService {
-//   private transporter;
-
-//   constructor() {
-//     this.transporter = nodemailer.createTransport({
-//       host: 'smtp.gmail.com',
-//       port: 465,
-//       secure: true,
-//       auth: {
-//         user: process.env.EMAIL_USER,
-//         pass: process.env.EMAIL_PASSWORD,
-//       },
-//     });
-//   }
-
-//   /**
-//    * Envía un correo electrónico genérico.
-//    * @param to - Dirección del destinatario.
-//    * @param subject - Asunto del correo.
-//    * @param body - Contenido del correo.
-//    * @returns Información sobre el correo enviado.
-//    * @throws Error si ocurre un problema al enviar el correo.
-//    */
-//   async sendEmail(to: string, subject: string, body: string) {
-//     try {
-//       const info = await this.transporter.sendMail({
-//         from: `"No-Reply" <${process.env.EMAIL_USER}>`,
-//         to,
-//         subject,
-//         text: body,
-//       });
-
-//       return info;
-//     } catch (error) {
-//       console.error('Error al enviar el correo:', error);
-//       throw new Error('Error al enviar el correo');
-//     }
-//   }
-
-//   /**
-//    * Envía un correo de verificación con un enlace que incluye un token.
-//    * @param to - Dirección del destinatario.
-//    * @returns Información sobre el correo enviado.
-//    */
-
-//   async sendVerificationEmail(to: string) {
-//     try {
-//       const token = generateToken({ email: to }, '1h');
-//       const verificationLink = `${process.env.BASE_URL}/api/users/verify-email?token=${token}`;
-//       const emailBody = `
-//         Hola,
-//         Para validar tu correo electrónico, haz clic en el siguiente enlace:
-//         ${verificationLink}
-//         Si no solicitaste esto, ignora este mensaje.
-//       `.trim();
-
-//       return await this.sendEmail(to, 'Verifica tu correo electrónico', emailBody);
-//     } catch (error: unknown) {
-//       console.error('Stack trace:', error instanceof Error ? error.stack : 'No stack trace available');
-
-//       if (error instanceof Error) {
-//         // Ahora podemos acceder a `error.message` de forma segura
-//         if (error.message.includes('jwt')) {
-//           throw new Error('Error generando el token');
-//         }
-//       }
-//       throw new Error('Error al enviar el correo de verificación');
-//     }
-//   }
-
-//   /**
-//    * Envía un correo con un archivo adjunto.
-//    * @param to - Dirección del destinatario.
-//    * @param subject - Asunto del correo.
-//    * @param body - Contenido del correo.
-//    * @param filePath - Ruta al archivo que se enviará como adjunto.
-//    */
-//   async sendEmailWithAttachment(to: string, subject: string, body: string, filePath: string) {
-//     try {
-//       const fileContent = fs.createReadStream(filePath);
-
-//       const info = await this.transporter.sendMail({
-//         from: `"No-Reply" <${process.env.EMAIL_USER}>`,
-//         to,
-//         subject,
-//         text: body,
-//         attachments: [
-//           {
-//             filename: path.basename(filePath),
-//             content: fileContent,
-//           },
-//         ],
-//       });
-
-//       return info;
-//     } catch (error) {
-//       console.error('Error al enviar el correo con adjunto:', error);
-//       throw new Error('Error al enviar el correo con adjunto');
-//     }
-//   }
-
-// }
-
 import nodemailer from "nodemailer";
 import { generateToken } from "../../utils/jwt.utils";
 import path from "path";
@@ -115,7 +7,6 @@ export class EmailService {
   private transporter;
 
   constructor() {
-    console.log("este es el node: ",process.env.NODE_ENV)
     if (process.env.NODE_ENV === "production") {
       this.transporter = nodemailer.createTransport({
         host: "smtp.gmail.com",
@@ -148,7 +39,7 @@ export class EmailService {
         from: `"No-Reply" <${process.env.EMAIL_USER}>`,
         to,
         subject,
-        text: body,
+        html: body,
       });
 
       // Solo para pruebas: mostrar info si está en desarrollo
@@ -167,11 +58,31 @@ export class EmailService {
   /**
    * Envía un correo de verificación con un enlace que incluye un token.
    */
-  async sendVerificationEmail(to: string) {
+  async sendVerificationEmail(to: string, nombre: string) {
     try {
       const token = generateToken({ email: to }, "1h");
       const verificationLink = `${process.env.BASE_URL}/api/users/verify-email?token=${token}`;
-      const emailBody = `Hola,\nPara validar tu correo electrónico, haz clic en el siguiente enlace:\n${verificationLink}\nSi no solicitaste esto, ignora este mensaje.`;
+      const emailBody = `
+    <html>
+  <body style="font-family: Arial, sans-serif; color: #ffffff; margin: 0; padding: 0; text-align: center;">
+    <div class="container" style="max-width: 600px; margin: 0 auto; background-color: #f4f4f4; padding: 20px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); text-align: center;">
+      <div class="header" style="background-color: #0056b3; color: white; padding: 20px; border-radius: 8px 8px 0 0; text-align: center;">
+        <h1 style="font-size: 28px; margin: 0;">Verifica tu correo electrónico</h1>
+      </div>
+      <div class="message" style="font-size: 16px; line-height: 1.5; margin-top: 20px; color: #333;">
+        <p>Hola, ${nombre}</p>
+        <p>Para validar tu correo electrónico, haz clic en el siguiente enlace:</p>
+        <a href="${verificationLink}" 
+           style="display: inline-block; background-color: #007BFF; color: #ffffff; padding: 12px 20px; text-decoration: none; border-radius: 5px; margin-top: 20px; font-size: 18px; text-align: center; border: none;">
+           Verificar mi correo
+        </a>
+        <p>Si no solicitaste esto, ignora este mensaje.</p>
+      </div>
+    </div>
+  </body>
+</html>
+
+    `;
 
       return await this.sendEmail(
         to,
@@ -200,7 +111,7 @@ export class EmailService {
         from: `"No-Reply" <${process.env.EMAIL_USER}>`,
         to,
         subject,
-        text: body,
+        html: body,
         attachments: [
           { filename: path.basename(filePath), content: fileContent },
         ],
