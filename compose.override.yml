@@ -1,7 +1,6 @@
 services:
   backend:
     environment:
-      NODE_ENV: production
       REDIS_HOST: redis_service
       REDIS_PORT: 6379
     volumes:
