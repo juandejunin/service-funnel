@@ -129,4 +129,19 @@ export class EmailService {
       throw new Error("Error al enviar el correo con adjunto");
     }
   }
+
+  async sendConfirmationEmail(
+    email: string,
+    nombre: string,
+    confirmationLink: string
+  ) {
+    const subject = "Confirmación para recibir el PDF";
+    const body = `
+      <p>Hola ${nombre},</p>
+      <p>Parece que has solicitado el PDF nuevamente. Para confirmar, haz clic en el siguiente enlace:</p>
+      <p><a href="${confirmationLink}">Confirmar envío del PDF</a></p>
+      <p>Si no solicitaste esto, ignora este mensaje.</p>
+    `;
+    await this.sendEmail(email, subject, body);
+  }
 }

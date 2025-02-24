@@ -18,7 +18,7 @@ export function startEmailWorker() {
         <h1 style="font-size: 28px; margin: 0;">Tu guia</h1>
       </div>
       <div class="message" style="font-size: 16px; line-height: 1.5; margin-top: 20px; color: #333;">
-        <p>Gracias por verificar tu correo, ${job.data.nombre}</p>
+        <p>Aqui tienes tu guia para potenciar tu crecimiento , ${job.data.nombre}</p>
         <p>Si tienes alguna pregunta, no dudes en ponerte en contacto con nosotros.</p>
         <p>Si no solicitaste esto, ignora este mensaje.</p>
       </div>

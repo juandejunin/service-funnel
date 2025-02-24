@@ -1,6 +1,6 @@
 import path from "path";
 import { Queue } from "bullmq";
-import { UsuarioModel } from "../../models/user.model";
+import { IUser, UsuarioModel } from "../../models/user.model";
 import { EmailService } from "../email/email.service";
 import jwt from "jsonwebtoken";
 
@@ -33,60 +33,134 @@ export class UserService {
   }
 
   // Método para manejar solicitudes de usuario
-  async processUserRequest(nombre: string, email: string) {
+  // async processUserRequest(nombre: string, email: string) {
+  //   try {
+  //     // Buscar si el usuario ya existe en la a de datos
+  //     const usuarioExistente = await UsuarioModel.findOne({ email });
+  //     if (usuarioExistente) {
+  //       // Caso 1: Usuario existe pero no está verificado
+  //       if (!usuarioExistente.isVerified) {
+  //         // Si el nombre ha cambiado, actualizamos el nombre también
+  //         if (usuarioExistente.nombre !== nombre) {
+  //           usuarioExistente.nombre = nombre;
+  //           await usuarioExistente.save();
+  //         }
+  //         await this.emailQueue.add("sendVerificationEmail", { email,nombre });
+  //         return { mensaje: "Correo de verificación reenviado" };
+  //       }
+
+  //       // Caso 2: Usuario existe y está verificado
+  //       if (usuarioExistente.nombre !== nombre) {
+  //         // Si el nombre ha cambiado, actualizamos el nombre
+  //         usuarioExistente.nombre = nombre;
+  //         await usuarioExistente.save();
+  //         return { mensaje: "Nombre actualizado y PDF reenviado" };
+  //       }
+
+  //       const filePath = path.join(__dirname, "../../files/archivo.pdf"); // Ruta al archivo PDF
+  //       await this.emailQueue.add("sendFileEmail", { email, filePath });
+  //       return { mensaje: "PDF reenviado al usuario verificado" };
+  //     }
+  //     // Caso 3: Usuario no existe, crear nuevo usuario y enviar correo de verificación
+  //     const nuevoUsuario = new UsuarioModel({ nombre, email });
+  //     try {
+  //       await nuevoUsuario.save(); // Guardar el usuario
+  //       await this.emailQueue.add("sendVerificationEmail", { email,nombre });
+  //     } catch (error) {
+  //       // Si el envío de correo falla, eliminamos el usuario creado
+  //       if (nuevoUsuario._id) {
+  //         await UsuarioModel.findByIdAndDelete(nuevoUsuario._id);
+  //       }
+  //       throw error; // Repropagar el error
+  //     }
+
+  //     return { mensaje: "Usuario registrado y correo de verificación enviado" };
+  //   } catch (error: unknown) {
+  //     if (error instanceof ValidationError) {
+  //       throw error; // Repropagar errores de validación
+  //     }
+  //     if (error instanceof Error) {
+  //       throw new DatabaseError(
+  //         `Error al guardar el usuario: ${error.message}`
+  //       );
+  //     }
+  //     throw new DatabaseError("Error desconocido al procesar la solicitud");
+  //   }
+  // }
+
+  async processUserRequest(nombre: string, email: string): Promise<{ mensaje: string }> {
     try {
-      // Buscar si el usuario ya existe en la a de datos
-      const usuarioExistente = await UsuarioModel.findOne({ email });
-      if (usuarioExistente) {
-        // Caso 1: Usuario existe pero no está verificado
-        if (!usuarioExistente.isVerified) {
-          // Si el nombre ha cambiado, actualizamos el nombre también
-          if (usuarioExistente.nombre !== nombre) {
-            usuarioExistente.nombre = nombre;
-            await usuarioExistente.save();
-          }
-          await this.emailQueue.add("sendVerificationEmail", { email,nombre });
-          return { mensaje: "Correo de verificación reenviado" };
+        // Buscar usuario existente
+        const usuarioExistente = await UsuarioModel.findOne({ email });
+
+        if (usuarioExistente) {
+            return await this.handleExistingUser(usuarioExistente, nombre, email);
         }
 
-        // Caso 2: Usuario existe y está verificado
-        if (usuarioExistente.nombre !== nombre) {
-          // Si el nombre ha cambiado, actualizamos el nombre
-          usuarioExistente.nombre = nombre;
-          await usuarioExistente.save();
-          return { mensaje: "Nombre actualizado y PDF reenviado" };
-        }
+        // Caso nuevo usuario
+        return await this.handleNewUser(nombre, email);
 
-        const filePath = path.join(__dirname, "../../files/archivo.pdf"); // Ruta al archivo PDF
-        await this.emailQueue.add("sendFileEmail", { email, filePath });
-        return { mensaje: "PDF reenviado al usuario verificado" };
-      }
-      // Caso 3: Usuario no existe, crear nuevo usuario y enviar correo de verificación
-      const nuevoUsuario = new UsuarioModel({ nombre, email });
-      try {
-        await nuevoUsuario.save(); // Guardar el usuario
-        await this.emailQueue.add("sendVerificationEmail", { email,nombre });
-      } catch (error) {
-        // Si el envío de correo falla, eliminamos el usuario creado
-        if (nuevoUsuario._id) {
-          await UsuarioModel.findByIdAndDelete(nuevoUsuario._id);
-        }
-        throw error; // Repropagar el error
-      }
-
-      return { mensaje: "Usuario registrado y correo de verificación enviado" };
     } catch (error: unknown) {
-      if (error instanceof ValidationError) {
-        throw error; // Repropagar errores de validación
-      }
-      if (error instanceof Error) {
-        throw new DatabaseError(
-          `Error al guardar el usuario: ${error.message}`
-        );
-      }
-      throw new DatabaseError("Error desconocido al procesar la solicitud");
+        this.handleError(error);
     }
+}
+
+// Manejar usuario existente
+private async handleExistingUser(
+  usuario:IUser,
+  nombre: string,
+  email: string
+): Promise<{ mensaje: string }> {
+  // Actualizar nombre si es diferente
+  const nombreActualizado = usuario.nombre !== nombre;
+  if (nombreActualizado) {
+      usuario.nombre = nombre;
+      await usuario.save();
   }
+
+  if (!usuario.isVerified) {
+      await this.emailQueue.add("sendVerificationEmail", { email, nombre });
+      return { mensaje: "Correo de verificación reenviado" };
+  }
+
+  const filePath = path.join(__dirname, "../../files/archivo.pdf");
+  await this.emailQueue.add("sendFileEmail", { email, filePath });
+  
+  return { 
+      mensaje: nombreActualizado 
+          ? "Nombre actualizado y PDF reenviado" 
+          : "PDF reenviado al usuario verificado" 
+  };
+}
+
+// Manejar nuevo usuario
+private async handleNewUser(nombre: string, email: string): Promise<{ mensaje: string }> {
+  const nuevoUsuario = new UsuarioModel({ nombre, email });
+  
+  try {
+      await nuevoUsuario.save();
+      await this.emailQueue.add("sendVerificationEmail", { email, nombre });
+      return { mensaje: "Usuario registrado y correo de verificación enviado" };
+  } catch (error) {
+      if (nuevoUsuario._id) {
+          await UsuarioModel.findByIdAndDelete(nuevoUsuario._id);
+      }
+      throw error;
+  }
+}
+
+// Manejo centralizado de errores
+private handleError(error: unknown): never {
+  if (error instanceof ValidationError) {
+      throw error;
+  }
+  if (error instanceof Error) {
+      throw new DatabaseError(`Error al guardar el usuario: ${error.message}`);
+  }
+  throw new DatabaseError("Error desconocido al procesar la solicitud");
+}
+
+
 
   // Método para crear un usuario (delegado a processUserRequest)
   async createUser(nombre: string, email: string) {
