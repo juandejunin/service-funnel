@@ -122,5 +122,5 @@ router.post(
 ); // Ruta para registrar usuario
 
 router.get("/verify-email", userController.verifyEmail.bind(userController)); // Ruta para verificar email
-
+router.get("/resend-file", userController.resendFile.bind(userController));
 export default router;

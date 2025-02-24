@@ -1,8 +1,7 @@
 import path from "path";
 import { Queue } from "bullmq";
 import { IUser, UsuarioModel } from "../../models/user.model";
-import { EmailService } from "../email/email.service";
-import jwt from "jsonwebtoken";
+import { verifyToken } from "../../utils/jwt.utils";
 
 class ValidationError extends Error {
   constructor(message: string) {
@@ -18,228 +17,188 @@ class DatabaseError extends Error {
   }
 }
 
+const PATHS = {
+  PDF_FILE: path.join(__dirname, "../../files/archivo.pdf"),
+};
+
 export class UserService {
-  private emailQueue: Queue;
+  constructor(private emailQueue: Queue) {}
 
-  constructor(private emailService = new EmailService()) {
-    // Configurar la cola de emails con Redis
-    this.emailQueue = new Queue("emailQueue", {
-      connection: {
-        host: process.env.REDIS_HOST || "redis", // Ajustar según configuración
-        port: parseInt(process.env.REDIS_PORT || "6379", 10),
-        password: process.env.REDIS_PASSWORD || undefined,
-      },
-    });
-  }
-
-  // Método para manejar solicitudes de usuario
-  // async processUserRequest(nombre: string, email: string) {
-  //   try {
-  //     // Buscar si el usuario ya existe en la a de datos
-  //     const usuarioExistente = await UsuarioModel.findOne({ email });
-  //     if (usuarioExistente) {
-  //       // Caso 1: Usuario existe pero no está verificado
-  //       if (!usuarioExistente.isVerified) {
-  //         // Si el nombre ha cambiado, actualizamos el nombre también
-  //         if (usuarioExistente.nombre !== nombre) {
-  //           usuarioExistente.nombre = nombre;
-  //           await usuarioExistente.save();
-  //         }
-  //         await this.emailQueue.add("sendVerificationEmail", { email,nombre });
-  //         return { mensaje: "Correo de verificación reenviado" };
-  //       }
-
-  //       // Caso 2: Usuario existe y está verificado
-  //       if (usuarioExistente.nombre !== nombre) {
-  //         // Si el nombre ha cambiado, actualizamos el nombre
-  //         usuarioExistente.nombre = nombre;
-  //         await usuarioExistente.save();
-  //         return { mensaje: "Nombre actualizado y PDF reenviado" };
-  //       }
-
-  //       const filePath = path.join(__dirname, "../../files/archivo.pdf"); // Ruta al archivo PDF
-  //       await this.emailQueue.add("sendFileEmail", { email, filePath });
-  //       return { mensaje: "PDF reenviado al usuario verificado" };
-  //     }
-  //     // Caso 3: Usuario no existe, crear nuevo usuario y enviar correo de verificación
-  //     const nuevoUsuario = new UsuarioModel({ nombre, email });
-  //     try {
-  //       await nuevoUsuario.save(); // Guardar el usuario
-  //       await this.emailQueue.add("sendVerificationEmail", { email,nombre });
-  //     } catch (error) {
-  //       // Si el envío de correo falla, eliminamos el usuario creado
-  //       if (nuevoUsuario._id) {
-  //         await UsuarioModel.findByIdAndDelete(nuevoUsuario._id);
-  //       }
-  //       throw error; // Repropagar el error
-  //     }
-
-  //     return { mensaje: "Usuario registrado y correo de verificación enviado" };
-  //   } catch (error: unknown) {
-  //     if (error instanceof ValidationError) {
-  //       throw error; // Repropagar errores de validación
-  //     }
-  //     if (error instanceof Error) {
-  //       throw new DatabaseError(
-  //         `Error al guardar el usuario: ${error.message}`
-  //       );
-  //     }
-  //     throw new DatabaseError("Error desconocido al procesar la solicitud");
-  //   }
-  // }
-
-  async processUserRequest(nombre: string, email: string): Promise<{ mensaje: string }> {
+  async processUserRequest(
+    nombre: string,
+    email: string
+  ): Promise<{ mensaje: string }> {
+    this.validateInput(nombre, email);
     try {
-        // Buscar usuario existente
-        const usuarioExistente = await UsuarioModel.findOne({ email });
-
-        if (usuarioExistente) {
-            return await this.handleExistingUser(usuarioExistente, nombre, email);
-        }
-
-        // Caso nuevo usuario
-        return await this.handleNewUser(nombre, email);
-
-    } catch (error: unknown) {
-        this.handleError(error);
+      const usuarioExistente = await this.findUserByEmail(email);
+      return usuarioExistente
+        ? await this.handleExistingUser(usuarioExistente, nombre, email)
+        : await this.handleNewUser(nombre, email);
+    } catch (error) {
+      this.handleError(error);
     }
-}
-
-// Manejar usuario existente
-private async handleExistingUser(
-  usuario:IUser,
-  nombre: string,
-  email: string
-): Promise<{ mensaje: string }> {
-  // Actualizar nombre si es diferente
-  const nombreActualizado = usuario.nombre !== nombre;
-  if (nombreActualizado) {
-      usuario.nombre = nombre;
-      await usuario.save();
   }
 
-  if (!usuario.isVerified) {
+  private async findUserByEmail(email: string): Promise<IUser | null> {
+    return await UsuarioModel.findOne({ email });
+  }
+
+  private async handleExistingUser(
+    usuario: IUser,
+    nombre: string,
+    email: string
+  ): Promise<{ mensaje: string }> {
+    const nombreActualizado = await this.updateNameIfChanged(usuario, nombre);
+    if (!usuario.isVerified) {
       await this.emailQueue.add("sendVerificationEmail", { email, nombre });
       return { mensaje: "Correo de verificación reenviado" };
+    }
+    if (nombreActualizado) {
+      await this.emailQueue.add("sendFileEmail", {
+        email,
+        filePath: PATHS.PDF_FILE,
+      });
+      return { mensaje: "Nombre actualizado y PDF reenviado" };
+    }
+
+    // Caso: usuario verificado, sin cambios en el nombre
+    await this.emailQueue.add("askForFileEmail", { email, nombre });
+    return {
+      mensaje:
+        "Te hemos enviado un correo para confirmar si deseas recibir el archivo nuevamente",
+    };
   }
 
-  const filePath = path.join(__dirname, "../../files/archivo.pdf");
-  await this.emailQueue.add("sendFileEmail", { email, filePath });
-  
-  return { 
-      mensaje: nombreActualizado 
-          ? "Nombre actualizado y PDF reenviado" 
-          : "PDF reenviado al usuario verificado" 
-  };
-}
-
-// Manejar nuevo usuario
-private async handleNewUser(nombre: string, email: string): Promise<{ mensaje: string }> {
-  const nuevoUsuario = new UsuarioModel({ nombre, email });
-  
-  try {
+  private async handleNewUser(
+    nombre: string,
+    email: string
+  ): Promise<{ mensaje: string }> {
+    const nuevoUsuario = new UsuarioModel({ nombre, email });
+    try {
       await nuevoUsuario.save();
       await this.emailQueue.add("sendVerificationEmail", { email, nombre });
       return { mensaje: "Usuario registrado y correo de verificación enviado" };
-  } catch (error) {
-      if (nuevoUsuario._id) {
-          await UsuarioModel.findByIdAndDelete(nuevoUsuario._id);
-      }
+    } catch (error) {
+      await this.rollbackUserCreation(nuevoUsuario);
       throw error;
+    }
   }
-}
 
-// Manejo centralizado de errores
-private handleError(error: unknown): never {
-  if (error instanceof ValidationError) {
-      throw error;
+  private async updateNameIfChanged(
+    usuario: IUser,
+    nombre: string
+  ): Promise<boolean> {
+    if (usuario.nombre !== nombre) {
+      usuario.nombre = nombre;
+      await usuario.save();
+      return true;
+    }
+    return false;
   }
-  if (error instanceof Error) {
-      throw new DatabaseError(`Error al guardar el usuario: ${error.message}`);
+
+  private async rollbackUserCreation(usuario: IUser): Promise<void> {
+    if (usuario._id) {
+      await UsuarioModel.findByIdAndDelete(usuario._id);
+    }
   }
-  throw new DatabaseError("Error desconocido al procesar la solicitud");
-}
 
+  private validateInput(nombre: string, email: string): void {
+    if (!nombre || !email) {
+      throw new ValidationError("Nombre y email son requeridos");
+    }
+  }
 
+  private handleError(error: unknown): never {
+    if (error instanceof ValidationError) throw error;
+    if (error instanceof Error)
+      throw new DatabaseError(`Error al procesar el usuario: ${error.message}`);
+    throw new DatabaseError("Error desconocido al procesar la solicitud");
+  }
 
-  // Método para crear un usuario (delegado a processUserRequest)
-  async createUser(nombre: string, email: string) {
+  async createUser(
+    nombre: string,
+    email: string
+  ): Promise<{ mensaje: string }> {
     return this.processUserRequest(nombre, email);
   }
 
-  // Método para actualizar un usuario
-  async updateUser(email: string, nombre: string) {
+  async updateUser(email: string, nombre: string): Promise<IUser> {
     try {
-      const usuario = await UsuarioModel.findOne({ email });
-      if (!usuario) {
-        throw new Error("Usuario no encontrado");
-      }
-
+      const usuario = await this.findUserByEmail(email);
+      if (!usuario) throw new ValidationError("Usuario no encontrado");
       usuario.nombre = nombre;
       await usuario.save();
-
       return usuario;
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        throw new DatabaseError(
-          `Error al actualizar el usuario: ${error.message}`
-        );
-      } else {
-        throw new DatabaseError("Error desconocido al actualizar el usuario");
-      }
+    } catch (error) {
+      this.handleError(error);
     }
   }
 
-  // Método para eliminar un usuario
-  async deleteUser(email: string) {
+  async deleteUser(email: string): Promise<{ message: string }> {
     try {
-      const usuario = await UsuarioModel.findOne({ email });
-      if (!usuario) {
-        throw new Error("Usuario no encontrado");
-      }
-
+      const usuario = await this.findUserByEmail(email);
+      if (!usuario) throw new ValidationError("Usuario no encontrado");
       await UsuarioModel.findByIdAndDelete(usuario._id);
-
       return { message: "Usuario eliminado exitosamente" };
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        throw new DatabaseError(
-          `Error al eliminar el usuario: ${error.message}`
-        );
-      } else {
-        throw new DatabaseError("Error desconocido al eliminar el usuario");
-      }
+    } catch (error) {
+      this.handleError(error);
     }
   }
 
-  // Método para verificar el email del usuario
-  async verifyUserEmail(token: string) {
+  // async verifyUserEmail(
+  //   token: string
+  // ): Promise<{ verificado: boolean; mensaje: string; redirectUrl?: string }> {
+  //   try {
+  //     const secretKey = process.env.JWT_SECRET_KEY;
+  //     if (!secretKey)
+  //       throw new Error("La clave secreta JWT no está configurada.");
+  //     const decoded = jwt.verify(token, secretKey) as { email: string };
+  //     const usuario = await this.findUserByEmail(decoded.email);
+
+  //     if (!usuario) throw new ValidationError("Usuario no encontrado");
+  //     if (usuario.isVerified)
+  //       return { verificado: true, mensaje: "El usuario ya estaba verificado" };
+
+  //     usuario.isVerified = true;
+  //     await usuario.save();
+
+  //     await this.emailQueue.add("sendFileEmail", {
+  //       email: usuario.email,
+  //       nombre: usuario.nombre,
+  //       filePath: PATHS.PDF_FILE,
+  //     });
+
+  //     return {
+  //       verificado: true,
+  //       mensaje: "Email verificado correctamente",
+  //       redirectUrl: `${process.env.FRONTEND_URL}/success`,
+  //     };
+  //   } catch (error) {
+  //     if (error instanceof jwt.JsonWebTokenError) {
+  //       return { verificado: false, mensaje: "Token inválido o expirado" };
+  //     }
+  //     this.handleError(error);
+  //   }
+  // }
+
+  async verifyUserEmail(token: string): Promise<{ verificado: boolean; mensaje: string; redirectUrl?: string }> {
     try {
       const secretKey = process.env.JWT_SECRET_KEY;
-      if (!secretKey) {
-        throw new Error("La clave secreta JWT no está configurada.");
-      }
+      if (!secretKey) throw new Error("La clave secreta JWT no está configurada.");
 
-      // Decodificar el token para obtener el email
-      const decoded = jwt.verify(token, secretKey) as { email: string };
-      const usuario = await UsuarioModel.findOne({ email: decoded.email });
+      const decoded = verifyToken(token, secretKey);
+      const usuario = await this.findUserByEmail(decoded.email);
 
-      if (!usuario) throw new Error("Usuario no encontrado");
+      if (!usuario) throw new ValidationError("Usuario no encontrado");
+      if (usuario.isVerified) return { verificado: true, mensaje: "El usuario ya estaba verificado" };
 
-      // Verificar si ya está verificado
-      if (usuario.isVerified)
-        return { verificado: true, mensaje: "El usuario ya estaba verificado" };
-
-      // Actualizar el estado de verificación
       usuario.isVerified = true;
       await usuario.save();
 
-      //const filePath = path.join(__dirname, "../files/archivo.pdf"); // Ruta al archivo PDF
-      const filePath = path.join(__dirname, "../../files/archivo.pdf");
       await this.emailQueue.add("sendFileEmail", {
         email: usuario.email,
         nombre: usuario.nombre,
-        filePath,
+        filePath: PATHS.PDF_FILE,
       });
 
       return {
@@ -247,11 +206,39 @@ private handleError(error: unknown): never {
         mensaje: "Email verificado correctamente",
         redirectUrl: `${process.env.FRONTEND_URL}/success`,
       };
-    } catch (error: unknown) {
-      if (error instanceof jwt.JsonWebTokenError) {
-        return { verificado: false, mensaje: "Token inválido o expirado" };
+    } catch (error) {
+      if (error instanceof Error) {
+        return { verificado: false, mensaje: error.message };
       }
-      throw error;
+      this.handleError(error);
+    }
+  }
+  async resendFile(email: string): Promise<{ mensaje: string, redirectUrl?: string }> {
+    try {
+      const usuario = await this.findUserByEmail(email);
+      if (!usuario) throw new ValidationError("Usuario no encontrado");
+      if (!usuario.isVerified) throw new ValidationError("Usuario no verificado");
+  
+      await this.emailQueue.add("sendFileEmail", {
+        email,
+        filePath: PATHS.PDF_FILE,
+      });
+      return { mensaje: "PDF reenviado exitosamente", redirectUrl: `${process.env.FRONTEND_URL}/success` };
+    } catch (error) {
+      if (error instanceof Error) {
+        return { mensaje: error.message }; // Devolvemos un objeto en caso de error
+      }
+      return { mensaje: "Error desconocido al reenviar el archivo" };
     }
   }
 }
+
+const emailQueue = new Queue("emailQueue", {
+  connection: {
+    host: process.env.REDIS_HOST || "redis",
+    port: parseInt(process.env.REDIS_PORT || "6379", 10),
+    password: process.env.REDIS_PASSWORD || undefined,
+  },
+});
+
+export const userService = new UserService(emailQueue);

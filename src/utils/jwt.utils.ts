@@ -43,23 +43,29 @@ export const generateToken = (
  * @returns El payload decodificado.
  * @throws Error si el token no es válido o ha expirado.
  */
-export function verifyToken(token: string, secret: string): JwtPayload {
+
+// Tipo específico para el payload esperado
+interface EmailPayload extends JwtPayload {
+  email: string;
+}
+
+export function verifyToken(token: string, secret: string): EmailPayload {
   try {
     const decoded = jwt.verify(token, secret);
-    if (typeof decoded === 'object' && decoded !== null) {
-      return decoded as JwtPayload;
+    if (typeof decoded === "object" && decoded !== null && "email" in decoded) {
+      return decoded as EmailPayload;
     }
-    throw new Error('El token no contiene un payload válido.');
+    throw new Error("El token no contiene un payload válido con email.");
   } catch (error) {
     if (error instanceof jwt.JsonWebTokenError) {
-      if (error.message.includes('malformed')) {
-        throw new Error('Token inválido: formato incorrecto.');
-      } else if (error.message.includes('expired')) {
-        throw new Error('Token inválido: ha expirado.');
+      if (error.message.includes("malformed")) {
+        throw new Error("Token inválido: formato incorrecto.");
+      } else if (error.message.includes("expired")) {
+        throw new Error("Token inválido: ha expirado.");
       } else {
-        throw new Error('Token inválido: error desconocido.');
+        throw new Error("Token inválido: error desconocido.");
       }
     }
-    throw new Error('Error al verificar el token.');
+    throw new Error("Error al verificar el token.");
   }
 }
