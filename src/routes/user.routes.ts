@@ -1,9 +1,13 @@
 import { Router } from "express";
 import { UserController } from "../controllers/user.controller";
 import { validateUserRegistration } from "../middlewares/validation.middleware";
+import { VisitController } from "../controllers/visit.controller";
+
+
 
 const router = Router();
 const userController = new UserController();
+const visitController = new VisitController(); // Instancia del controlador de visitas
 
 /**
  * @swagger
@@ -114,6 +118,55 @@ const userController = new UserController();
  */
 
 
+/**
+ * @swagger
+ * /api/visits/track:
+ *   get:
+ *     summary: Registra una visita a la página.
+ *     tags:
+ *       - Visitas
+ *     responses:
+ *       200:
+ *         description: Visita registrada exitosamente.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 visits:
+ *                   type: number
+ *                   example: 42
+ *       500:
+ *         description: Error al registrar la visita.
+ */
+
+/**
+ * @swagger
+ * /api/visits:
+ *   get:
+ *     summary: Consulta el total de visitas.
+ *     tags:
+ *       - Visitas
+ *     responses:
+ *       200:
+ *         description: Total de visitas devuelto.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 visits:
+ *                   type: number
+ *                   example: 42
+ *       500:
+ *         description: Error al consultar las visitas.
+ */
 
 router.post(
   "/register",
@@ -123,4 +176,9 @@ router.post(
 
 router.get("/verify-email", userController.verifyEmail.bind(userController)); // Ruta para verificar email
 router.get("/resend-file", userController.resendFile.bind(userController));
+
+router.get("/visits/track", visitController.trackVisit.bind(visitController));
+
+
+router.get("/visits", visitController.getVisits.bind(visitController));
 export default router;
