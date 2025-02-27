@@ -1,4 +1,3 @@
-
 import { Request, Response } from "express";
 import { Queue } from "bullmq";
 import { UserService } from "../services/user/user.service";

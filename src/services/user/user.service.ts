@@ -145,42 +145,6 @@ export class UserService {
     }
   }
 
-  // async verifyUserEmail(
-  //   token: string
-  // ): Promise<{ verificado: boolean; mensaje: string; redirectUrl?: string }> {
-  //   try {
-  //     const secretKey = process.env.JWT_SECRET_KEY;
-  //     if (!secretKey)
-  //       throw new Error("La clave secreta JWT no está configurada.");
-  //     const decoded = jwt.verify(token, secretKey) as { email: string };
-  //     const usuario = await this.findUserByEmail(decoded.email);
-
-  //     if (!usuario) throw new ValidationError("Usuario no encontrado");
-  //     if (usuario.isVerified)
-  //       return { verificado: true, mensaje: "El usuario ya estaba verificado" };
-
-  //     usuario.isVerified = true;
-  //     await usuario.save();
-
-  //     await this.emailQueue.add("sendFileEmail", {
-  //       email: usuario.email,
-  //       nombre: usuario.nombre,
-  //       filePath: PATHS.PDF_FILE,
-  //     });
-
-  //     return {
-  //       verificado: true,
-  //       mensaje: "Email verificado correctamente",
-  //       redirectUrl: `${process.env.FRONTEND_URL}/success`,
-  //     };
-  //   } catch (error) {
-  //     if (error instanceof jwt.JsonWebTokenError) {
-  //       return { verificado: false, mensaje: "Token inválido o expirado" };
-  //     }
-  //     this.handleError(error);
-  //   }
-  // }
-
   async verifyUserEmail(token: string): Promise<{ verificado: boolean; mensaje: string; redirectUrl?: string }> {
     try {
       const secretKey = process.env.JWT_SECRET_KEY;
