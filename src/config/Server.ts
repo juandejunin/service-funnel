@@ -4,7 +4,7 @@ import userRoutes from "../routes/user.routes";
 import path from "path";
 import { connectToDatabase } from "./database";
 import swaggerUi from "swagger-ui-express";
-import swaggerSpecs from "./swagger.config"; // Importa la configuración de Swagger
+import swaggerSpecs from "./swagger.config";
 import { startEmailWorker } from "../workers/email.worker";
 
 class Server {
@@ -16,56 +16,65 @@ class Server {
     this.port = process.env.PORT || "4000";
 
     this.middlewares();
-    this.routes(); // Configuración de rutas
-    this.setupSwagger(); // Configuración de Swagger
+    this.routes();
+    this.setupSwagger();
   }
 
-  // Getter para acceder a 'app' de manera pública
   public getApp(): Application {
     return this.app;
   }
 
   private middlewares() {
-    this.app.use(express.json()); // Middleware para parsear JSON
+    this.app.use(express.json());
 
-    // 🔹 Configurar CORS para permitir peticiones desde el frontend
-    this.app.use(cors({
-        origin: ['http://localhost:4321', 'https://tudominio.com'], // Solo estos orígenes están permitidos
-        methods: ['GET', 'POST'], // Solo permitimos estos métodos
-        allowedHeaders: ['Content-Type', 'Authorization'], // Solo permitimos estos encabezados
-        credentials: true // Habilitamos credenciales si es necesario
-    }));
-    
+    // 🔹 Configurar CORS con variables de entorno
+    const allowedOrigins = [
+      process.env.FRONTEND_URL_LOCAL || "http://localhost:4321", // Para desarrollo
+      process.env.FRONTEND_URL_PROD || "https://tusistema.es",   // Para producción
+    ];
+
+    this.app.use(
+      cors({
+        origin: (origin, callback) => {
+          // Permitir solicitudes sin origen (como Postman) o desde los orígenes permitidos
+          if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+          } else {
+            callback(new Error("Not allowed by CORS"));
+          }
+        },
+        methods: ["GET", "POST"],
+        allowedHeaders: ["Content-Type", "Authorization"],
+        credentials: true,
+      })
+    );
+
     // Manejo específico de Preflight Requests
-    this.app.options('/api/users/register', (req, res) => {
-        res.header('Access-Control-Allow-Origin', 'http://localhost:4321');
-        res.header('Access-Control-Allow-Methods', 'POST');
-        res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-        res.sendStatus(204); // Código 204 indica que no hay contenido en la respuesta
+    this.app.options("/api/users/register", (req, res) => {
+      res.header("Access-Control-Allow-Origin", process.env.FRONTEND_URL_LOCAL || "http://localhost:4321");
+      res.header("Access-Control-Allow-Methods", "POST");
+      res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+      res.sendStatus(204);
     });
   }
 
   private routes() {
-    this.app.use("/api/users", userRoutes); // Configura las rutas de usuarios
+    this.app.use("/api/users", userRoutes);
   }
 
   private setupSwagger() {
-    // Middleware para Swagger
     this.app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
   }
 
   public async listen() {
-    // Intentamos conectar a la base de datos antes de iniciar el servidor
     await connectToDatabase();
+    startEmailWorker();
 
-    startEmailWorker(); // 🔹 Iniciar el worker después de la conexión
-
-    // Levantamos el servidor
+    // Usamos BASE_URL para Swagger en lugar de localhost
+    const baseUrl = process.env.BASE_URL || "http://localhost:4000";
     this.app.listen(this.port, () => {
       console.log(`Servidor corriendo en el puerto: ${this.port}`);
-      console.log(
-        `Documentación disponible en http://localhost:${this.port}/api-docs`
-      );
+      console.log(`Documentación disponible en ${baseUrl}/api-docs`);
     });
   }
 }

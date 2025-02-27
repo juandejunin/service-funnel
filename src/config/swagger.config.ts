@@ -17,9 +17,6 @@ const swaggerOptions = {
   apis: [path.join(__dirname, '../routes/user.routes.js')], // Ruta absoluta
 };
 
-console.log('Swagger BASE_URL:', process.env.BASE_URL);
-
-
 const swaggerSpecs = swaggerJsdoc(swaggerOptions);
 
 export default swaggerSpecs;
