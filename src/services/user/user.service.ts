@@ -18,7 +18,7 @@ class DatabaseError extends Error {
 }
 
 const PATHS = {
-  PDF_FILE: path.join(__dirname, "../../files/archivo.pdf"),
+  PDF_FILE: path.join(__dirname, "../../files/Guía_gratuita_para_emprendedores_que_quieren_crecer_sin_complicaciones.pdf"),
 };
 
 export class UserService {
@@ -221,9 +221,10 @@ export class UserService {
   
       await this.emailQueue.add("sendFileEmail", {
         email,
+        nombre: usuario.nombre,
         filePath: PATHS.PDF_FILE,
       });
-      return { mensaje: "PDF reenviado exitosamente", redirectUrl: `${process.env.FRONTEND_URL}/success` };
+      return { mensaje: "PDF reenviado exitosamente", redirectUrl: `${process.env.FRONTEND_URL}/send` };
     } catch (error) {
       if (error instanceof Error) {
         return { mensaje: error.message }; // Devolvemos un objeto en caso de error
