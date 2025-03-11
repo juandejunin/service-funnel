@@ -1,4 +1,4 @@
-# Proyecto: **Sistema de Registro de Usuarios**
+# Proyecto: **Sistema de captura de leads**
 
 ## Descripción
 
