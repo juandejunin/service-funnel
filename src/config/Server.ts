@@ -31,6 +31,7 @@ class Server {
     const allowedOrigins = [
       process.env.FRONTEND_URL_LOCAL || "http://localhost:4321", // Para desarrollo
       process.env.FRONTEND_URL_PROD || "https://tusistema.es",   // Para producción
+      process.env.FRONTEND_URL_WWW || "https://www.tusistema.es",
     ];
 
     this.app.use(
