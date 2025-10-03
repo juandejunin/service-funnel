@@ -24,40 +24,41 @@ class Server {
     return this.app;
   }
 
-  private middlewares() {
-    this.app.use(express.json());
+private middlewares() {
+  this.app.use(express.json());
 
-    // 🔹 Configurar CORS con variables de entorno
-    const allowedOrigins = [
-      process.env.FRONTEND_URL_LOCAL || "http://localhost:4321", // Para desarrollo
-      process.env.FRONTEND_URL_PROD || "https://tusistema.es",   // Para producción
-      process.env.FRONTEND_URL_WWW || "https://www.tusistema.es",
-    ];
+  // 🔹 Tomamos las URLs permitidas desde el .env
+  const allowedOrigins = (process.env.FRONTEND_URL_LOCAL || "")
+    .split(",")
+    .map(url => url.trim())
+    .filter(Boolean);
 
-    this.app.use(
-      cors({
-        origin: (origin, callback) => {
-          // Permitir solicitudes sin origen (como Postman) o desde los orígenes permitidos
-          if (!origin || allowedOrigins.includes(origin)) {
-            callback(null, true);
-          } else {
-            callback(new Error("Not allowed by CORS"));
-          }
-        },
-        methods: ["GET", "POST"],
-        allowedHeaders: ["Content-Type", "Authorization"],
-        credentials: true,
-      })
-    );
+  if (process.env.FRONTEND_URL_PROD) allowedOrigins.push(process.env.FRONTEND_URL_PROD);
+  if (process.env.FRONTEND_URL_WWW) allowedOrigins.push(process.env.FRONTEND_URL_WWW);
 
-    // Manejo específico de Preflight Requests
-    this.app.options("/api/users/register", (req, res) => {
-      res.header("Access-Control-Allow-Origin", process.env.FRONTEND_URL_LOCAL || "http://localhost:4321");
-      res.header("Access-Control-Allow-Methods", "POST");
-      res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
-      res.sendStatus(204);
-    });
-  }
+  this.app.use(
+    cors({
+      origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin)) {
+          callback(null, true); // permite Postman y solicitudes internas
+        } else {
+          callback(new Error("Not allowed by CORS"));
+        }
+      },
+      methods: ["GET", "POST"],
+      allowedHeaders: ["Content-Type", "Authorization"],
+      credentials: true,
+    })
+  );
+
+  // Preflight Requests dinámicos para cualquier endpoint
+  this.app.options("*", (req, res) => {
+    res.header("Access-Control-Allow-Origin", req.headers.origin || "");
+    res.header("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+    res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    res.sendStatus(204);
+  });
+}
 
   private routes() {
     this.app.use("/api/users", userRoutes);
