@@ -1,31 +1,35 @@
+version: "3.9"
+
 services:
   redis:
     image: redis:latest
     container_name: redis_service
     command: redis-server --requirepass ${REDIS_PASSWORD}
-    networks:
-      - internal_net
     environment:
       - REDIS_PASSWORD=${REDIS_PASSWORD}
+    networks:
+      - internal_net
 
   backend:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: backend_service
     ports:
       - "3000:3000"
     environment:
-      REDIS_HOST: redis
+      NODE_ENV: production
+      REDIS_HOST: redis_service
       REDIS_PORT: 6379
       REDIS_PASSWORD: ${REDIS_PASSWORD}
+      FRONTEND_URL_PROD: http://localhost:4321  # o el dominio real si querés testear redirecciones
     depends_on:
       - redis
     networks:
       - internal_net
     volumes:
-      - .:/app  # 🔥 Montamos el código fuente dentro del contenedor
-      - /app/node_modules  # 🔥 Evita sobrescribir node_modules
-      - /app/dist  # 🔥 Asegura que el build no sea sobreescrito
-    command: sh -c "npm run build && node dist/index.js"  # 🔥 Ejecutamos `npm run build` antes de iniciar la app
+      - ./files:/app/files  # ✅ Solo montamos la carpeta de PDFs u otros adjuntos
+    command: ["node", "dist/index.js"]  # ✅ Arranca el código ya compilado (no se reconstruye en cada arranque)
 
 networks:
   internal_net:
