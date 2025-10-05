@@ -21,10 +21,12 @@ class DatabaseError extends Error {
 // Ruta del PDF que se envía a los usuarios
 const PATHS = {
   PDF_FILE: path.join(
-    __dirname,
-    "../../files/Guía_gratuita_para_emprendedores_que_quieren_crecer_sin_complicaciones.pdf"
+    process.cwd(),
+    "files",
+    "Guía_gratuita_para_emprendedores_que_quieren_crecer_sin_complicaciones.pdf"
   ),
 };
+
 
 export class UserService {
   constructor(private emailQueue: Queue) {}
