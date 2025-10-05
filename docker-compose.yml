@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   redis:
     image: redis:latest
@@ -17,19 +15,21 @@ services:
     container_name: backend_service
     ports:
       - "3000:3000"
+    env_file:
+      - .env
     environment:
       NODE_ENV: production
       REDIS_HOST: redis_service
       REDIS_PORT: 6379
       REDIS_PASSWORD: ${REDIS_PASSWORD}
-      FRONTEND_URL_PROD: http://localhost:4321  # o el dominio real si querés testear redirecciones
+      FRONTEND_URL_PROD: http://localhost:4321
     depends_on:
       - redis
     networks:
       - internal_net
     volumes:
-      - ./files:/app/files  # ✅ Solo montamos la carpeta de PDFs u otros adjuntos
-    command: ["node", "dist/index.js"]  # ✅ Arranca el código ya compilado (no se reconstruye en cada arranque)
+      - ./files:/app/files
+    command: ["wait-for-it", "redis_service:6379", "--", "node", "dist/index.js"]
 
 networks:
   internal_net:
