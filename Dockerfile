@@ -1,10 +1,9 @@
-# Usamos una imagen base ligera con Node.js
-FROM node:18-alpine AS builder
+# ---- Etapa de construcción ----
+FROM node:20-alpine AS builder
 
-# Establecemos el directorio de trabajo dentro del contenedor
 WORKDIR /app
 
-# Copiamos los archivos necesarios antes de instalar dependencias
+# Copiamos los package.json antes de instalar dependencias
 COPY package*.json ./
 
 # Instalamos dependencias de desarrollo (para compilar)
@@ -17,20 +16,21 @@ COPY . .
 RUN npm run build
 
 # ---- Etapa final (producción) ----
-FROM node:18-alpine
+FROM node:20-alpine
+
 WORKDIR /app
 
-# Copiamos solo el build y archivos necesarios desde la etapa anterior
+# Copiamos solo el build y archivos necesarios desde la etapa de builder
 COPY --from=builder /app/dist ./dist
 COPY package*.json ./
 
 # Instalamos solo dependencias de producción
 RUN npm install --omit=dev
 
-# Copiamos la carpeta "files" (que está en la raíz del proyecto)
+# Copiamos la carpeta "files"
 COPY files ./files
 
-# Exponemos el puerto 3000 del backend
+# Exponemos el puerto del backend
 EXPOSE 3000
 
 # Comando para ejecutar la aplicación
