@@ -1,3 +1,5 @@
+import dotenv from 'dotenv';
+dotenv.config();
 import nodemailer from "nodemailer";
 import { generateToken } from "../../utils/jwt.utils";
 import path from "path";
@@ -6,18 +8,19 @@ import fs from "fs";
 export class EmailService {
   private transporter;
 
-  constructor() {
-        // Configuración centralizada del transporter usando variables de entorno
-    this.transporter = nodemailer.createTransport({
-      host: process.env.EMAIL_HOST,
-      port: Number(process.env.EMAIL_PORT),
-      secure: process.env.EMAIL_SECURE === "true",
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASSWORD,
-      },
-    });
-  }
+constructor() {
+  // Configuración centralizada del transporter usando variables de entorno
+  this.transporter = nodemailer.createTransport({
+    host: process.env.EMAIL_HOST,
+    port: Number(process.env.EMAIL_PORT),
+    secure: process.env.EMAIL_SECURE === "true",
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASSWORD,
+    },
+  });
+}
+
 
   async sendEmail(to: string, subject: string, body: string) {
     try {

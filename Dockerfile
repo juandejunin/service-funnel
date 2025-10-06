@@ -1,5 +1,5 @@
-# ---- Etapa de construcción ----
-FROM node:20-alpine AS builder
+# Usamos una imagen base ligera con Node.js
+FROM node:20-alpine
 
 # Configuramos directorio de trabajo
 WORKDIR /app
