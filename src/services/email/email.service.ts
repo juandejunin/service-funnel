@@ -1,3 +1,5 @@
+import dotenv from 'dotenv';
+dotenv.config();
 import nodemailer from "nodemailer";
 import { generateToken } from "../../utils/jwt.utils";
 import path from "path";
@@ -6,29 +8,19 @@ import fs from "fs";
 export class EmailService {
   private transporter;
 
-  constructor() {
-    if (process.env.NODE_ENV === "production") {
-      this.transporter = nodemailer.createTransport({
-        host: "smtp.ionos.es",
-        port: 587,
-        secure: false,
-        auth: {
-          user: process.env.EMAIL_USER,
-          pass: process.env.EMAIL_PASSWORD,
-        },
-      });
-    } else {
-      this.transporter = nodemailer.createTransport({
-        host: "smtp.ethereal.email",
-        port: 587,
-        secure: false,
-        auth: {
-          user: process.env.ETHEREAL_USER,
-          pass: process.env.ETHEREAL_PASS,
-        },
-      });
-    }
-  }
+constructor() {
+  // Configuración centralizada del transporter usando variables de entorno
+  this.transporter = nodemailer.createTransport({
+    host: process.env.EMAIL_HOST,
+    port: Number(process.env.EMAIL_PORT),
+    secure: process.env.EMAIL_SECURE === "true",
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASSWORD,
+    },
+  });
+}
+
 
   async sendEmail(to: string, subject: string, body: string) {
     try {
