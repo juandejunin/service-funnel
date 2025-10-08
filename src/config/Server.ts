@@ -30,25 +30,33 @@ class Server {
     // 🔹 Confiar en proxy (Nginx) para HTTPS
     this.app.set("trust proxy", true);
 
-    // 🔹 Configurar CORS
-    const allowedOrigins = [
-      process.env.FRONTEND_URL_LOCAL || "http://localhost:4321",
-      process.env.FRONTEND_URL_PROD || "https://tusistema.es","https://www.tusistema.es"
-    ];
-
+    // 🔹 Configurar CORS para aceptar todos los orígenes (solo para pruebas)
     const corsOptions = {
-      origin: (origin: string | undefined, callback: Function) => {
-        // Permitir solicitudes sin origin (Postman) o desde los orígenes permitidos
-        if (!origin || allowedOrigins.includes(origin)) {
-          callback(null, true);
-        } else {
-          callback(new Error("Not allowed by CORS"));
-        }
-      },
+      origin: true, // Permite todos los orígenes
       methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
       allowedHeaders: ["Content-Type", "Authorization"],
       credentials: true,
     };
+
+    // // 🔹 Configurar CORS
+    // const allowedOrigins = [
+    //   process.env.FRONTEND_URL_LOCAL || "http://localhost:4321",
+    //   process.env.FRONTEND_URL_PROD || "https://tusistema.es","https://www.tusistema.es"
+    // ];
+
+    // const corsOptions = {
+    //   origin: (origin: string | undefined, callback: Function) => {
+    //     // Permitir solicitudes sin origin (Postman) o desde los orígenes permitidos
+    //     if (!origin || allowedOrigins.includes(origin)) {
+    //       callback(null, true);
+    //     } else {
+    //       callback(new Error("Not allowed by CORS"));
+    //     }
+    //   },
+    //   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    //   allowedHeaders: ["Content-Type", "Authorization"],
+    //   credentials: true,
+    // };
 
     this.app.use(cors(corsOptions));
 
