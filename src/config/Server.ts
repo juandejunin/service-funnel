@@ -24,8 +24,8 @@ class Server {
     return this.app;
   }
 
-private middlewares() {
-  this.app.use(express.json());
+  private middlewares() {
+    this.app.use(express.json());
 
     // 🔹 Confiar en proxy (Nginx) para HTTPS
     this.app.set("trust proxy", true);
