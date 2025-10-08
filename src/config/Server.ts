@@ -1,7 +1,6 @@
 import express, { Application } from "express";
 import cors from "cors";
 import userRoutes from "../routes/user.routes";
-import articleRoutes from "../routes/article.routes";
 import { connectToDatabase } from "./database";
 import swaggerUi from "swagger-ui-express";
 import swaggerSpecs from "./swagger.config";
@@ -51,7 +50,7 @@ class Server {
 
   private routes() {
     this.app.use("/api/users", userRoutes);
-    this.app.use("/api/articles", articleRoutes);
+
   }
 
   private setupSwagger() {
