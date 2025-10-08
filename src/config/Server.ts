@@ -1,6 +1,7 @@
 import express, { Application } from "express";
 import cors from "cors";
 import userRoutes from "../routes/user.routes";
+
 import { connectToDatabase } from "./database";
 import swaggerUi from "swagger-ui-express";
 import swaggerSpecs from "./swagger.config";
@@ -29,18 +30,25 @@ class Server {
     // 🔹 Confiar en proxy (Nginx) para HTTPS
     this.app.set("trust proxy", true);
 
-    // 🔹 Configurar CORS para aceptar todos los orígenes (solo para pruebas)
+    // 🔹 Configurar CORS
+    const allowedOrigins = [
+      process.env.FRONTEND_URL_LOCAL || "http://localhost:4321",
+      process.env.FRONTEND_URL_PROD || "https://tusistema.es","https://www.tusistema.es"
+    ];
+
     const corsOptions = {
       origin: (origin: string | undefined, callback: Function) => {
-        console.log("Request origin:", origin); // Log para depurar el origen
-        callback(null, true); // Permite todos los orígenes
+        // Permitir solicitudes sin origin (Postman) o desde los orígenes permitidos
+        if (!origin || allowedOrigins.includes(origin)) {
+          callback(null, true);
+        } else {
+          callback(new Error("Not allowed by CORS"));
+        }
       },
-      methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"],
-      allowedHeaders: ["Content-Type", "Authorization", "Accept", "X-Requested-With", "X-API-Key"],
+      methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+      allowedHeaders: ["Content-Type", "Authorization"],
       credentials: true,
     };
-
-    console.log("CORS configuration:", corsOptions); // Log para confirmar la configuración
 
     this.app.use(cors(corsOptions));
 
