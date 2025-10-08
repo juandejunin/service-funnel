@@ -1,7 +1,7 @@
 import express, { Application } from "express";
 import cors from "cors";
 import userRoutes from "../routes/user.routes";
-import path from "path";
+import articleRoutes from "../routes/article.routes";
 import { connectToDatabase } from "./database";
 import swaggerUi from "swagger-ui-express";
 import swaggerSpecs from "./swagger.config";
@@ -13,7 +13,7 @@ class Server {
 
   constructor() {
     this.app = express();
-    this.port = process.env.PORT || "4000";
+    this.port = process.env.PORT || "3000";
 
     this.middlewares();
     this.routes();
@@ -27,39 +27,38 @@ class Server {
   private middlewares() {
     this.app.use(express.json());
 
-    // 🔹 Configurar CORS con variables de entorno
+    // 🔹 Confiar en proxy (Nginx) para HTTPS
+    this.app.set("trust proxy", true);
+
+    // 🔹 Configurar CORS
     const allowedOrigins = [
-      process.env.FRONTEND_URL_LOCAL || "http://localhost:4321", // Para desarrollo
-      process.env.FRONTEND_URL_PROD || "https://tusistema.es",   // Para producción
+      process.env.FRONTEND_URL_LOCAL || "http://localhost:4321",
+      process.env.FRONTEND_URL_PROD || "https://tusistema.es",
     ];
 
-    this.app.use(
-      cors({
-        origin: (origin, callback) => {
-          // Permitir solicitudes sin origen (como Postman) o desde los orígenes permitidos
-          if (!origin || allowedOrigins.includes(origin)) {
-            callback(null, true);
-          } else {
-            callback(new Error("Not allowed by CORS"));
-          }
-        },
-        methods: ["GET", "POST"],
-        allowedHeaders: ["Content-Type", "Authorization"],
-        credentials: true,
-      })
-    );
+    const corsOptions = {
+      origin: (origin: string | undefined, callback: Function) => {
+        // Permitir solicitudes sin origin (Postman) o desde los orígenes permitidos
+        if (!origin || allowedOrigins.includes(origin)) {
+          callback(null, true);
+        } else {
+          callback(new Error("Not allowed by CORS"));
+        }
+      },
+      methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+      allowedHeaders: ["Content-Type", "Authorization"],
+      credentials: true,
+    };
 
-    // Manejo específico de Preflight Requests
-    this.app.options("/api/users/register", (req, res) => {
-      res.header("Access-Control-Allow-Origin", process.env.FRONTEND_URL_LOCAL || "http://localhost:4321");
-      res.header("Access-Control-Allow-Methods", "POST");
-      res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
-      res.sendStatus(204);
-    });
+    this.app.use(cors(corsOptions));
+
+    // 🔹 Manejo global de preflight para todos los endpoints
+    this.app.options("*", cors(corsOptions));
   }
 
   private routes() {
     this.app.use("/api/users", userRoutes);
+    this.app.use("/api/articles", articleRoutes);
   }
 
   private setupSwagger() {
@@ -70,8 +69,7 @@ class Server {
     await connectToDatabase();
     startEmailWorker();
 
-    // Usamos BASE_URL para Swagger en lugar de localhost
-    const baseUrl = process.env.BASE_URL || "http://localhost:4000";
+    const baseUrl = process.env.BASE_URL || `https://tusistema.es`;
     this.app.listen(this.port, () => {
       console.log(`Servidor corriendo en el puerto: ${this.port}`);
       console.log(`Documentación disponible en ${baseUrl}/api-docs`);
