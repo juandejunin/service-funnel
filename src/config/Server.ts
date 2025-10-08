@@ -1,7 +1,7 @@
 import express, { Application } from "express";
 import cors from "cors";
 import userRoutes from "../routes/user.routes";
-import path from "path";
+import articleRoutes from "../routes/article.routes";
 import { connectToDatabase } from "./database";
 import swaggerUi from "swagger-ui-express";
 import swaggerSpecs from "./swagger.config";
@@ -13,7 +13,7 @@ class Server {
 
   constructor() {
     this.app = express();
-    this.port = process.env.PORT || "4000";
+    this.port = process.env.PORT || "3000";
 
     this.middlewares();
     this.routes();
@@ -27,41 +27,38 @@ class Server {
 private middlewares() {
   this.app.use(express.json());
 
-  // 🔹 Tomamos las URLs permitidas desde el .env
-  const allowedOrigins = (process.env.FRONTEND_URL_LOCAL || "")
-    .split(",")
-    .map(url => url.trim())
-    .filter(Boolean);
+    // 🔹 Confiar en proxy (Nginx) para HTTPS
+    this.app.set("trust proxy", true);
 
-  if (process.env.FRONTEND_URL_PROD) allowedOrigins.push(process.env.FRONTEND_URL_PROD);
-  if (process.env.FRONTEND_URL_WWW) allowedOrigins.push(process.env.FRONTEND_URL_WWW);
+    // 🔹 Configurar CORS
+    const allowedOrigins = [
+      process.env.FRONTEND_URL_LOCAL || "http://localhost:4321",
+      process.env.FRONTEND_URL_PROD || "https://tusistema.es",
+    ];
 
-  this.app.use(
-    cors({
-      origin: (origin, callback) => {
+    const corsOptions = {
+      origin: (origin: string | undefined, callback: Function) => {
+        // Permitir solicitudes sin origin (Postman) o desde los orígenes permitidos
         if (!origin || allowedOrigins.includes(origin)) {
-          callback(null, true); // permite Postman y solicitudes internas
+          callback(null, true);
         } else {
           callback(new Error("Not allowed by CORS"));
         }
       },
-      methods: ["GET", "POST"],
+      methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
       allowedHeaders: ["Content-Type", "Authorization"],
       credentials: true,
-    })
-  );
+    };
 
-  // Preflight Requests dinámicos para cualquier endpoint
-  this.app.options("*", (req, res) => {
-    res.header("Access-Control-Allow-Origin", req.headers.origin || "");
-    res.header("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
-    res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
-    res.sendStatus(204);
-  });
-}
+    this.app.use(cors(corsOptions));
+
+    // 🔹 Manejo global de preflight para todos los endpoints
+    this.app.options("*", cors(corsOptions));
+  }
 
   private routes() {
     this.app.use("/api/users", userRoutes);
+    this.app.use("/api/articles", articleRoutes);
   }
 
   private setupSwagger() {
@@ -72,8 +69,7 @@ private middlewares() {
     await connectToDatabase();
     startEmailWorker();
 
-    // Usamos BASE_URL para Swagger en lugar de localhost
-    const baseUrl = process.env.BASE_URL || "http://localhost:4000";
+    const baseUrl = process.env.BASE_URL || `https://tusistema.es`;
     this.app.listen(this.port, () => {
       console.log(`Servidor corriendo en el puerto: ${this.port}`);
       console.log(`Documentación disponible en ${baseUrl}/api-docs`);
