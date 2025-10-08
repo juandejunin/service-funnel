@@ -24,8 +24,8 @@ class Server {
     return this.app;
   }
 
-private middlewares() {
-  this.app.use(express.json());
+  private middlewares() {
+    this.app.use(express.json());
 
     // 🔹 Confiar en proxy (Nginx) para HTTPS
     this.app.set("trust proxy", true);
@@ -33,7 +33,7 @@ private middlewares() {
     // 🔹 Configurar CORS
     const allowedOrigins = [
       process.env.FRONTEND_URL_LOCAL || "http://localhost:4321",
-      process.env.FRONTEND_URL_PROD || "https://tusistema.es",
+      process.env.FRONTEND_URL_PROD || "https://tusistema.es","https://www.tusistema.es"
     ];
 
     const corsOptions = {
