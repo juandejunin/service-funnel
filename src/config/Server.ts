@@ -1,7 +1,7 @@
 import express, { Application } from "express";
 import cors from "cors";
 import userRoutes from "../routes/user.routes";
-
+import articleRoutes from "../routes/article.routes";
 import { connectToDatabase } from "./database";
 import swaggerUi from "swagger-ui-express";
 import swaggerSpecs from "./swagger.config";
@@ -33,7 +33,8 @@ class Server {
     // 🔹 Configurar CORS
     const allowedOrigins = [
       process.env.FRONTEND_URL_LOCAL || "http://localhost:4321",
-      process.env.FRONTEND_URL_PROD || "https://tusistema.es","https://www.tusistema.es"
+      process.env.FRONTEND_URL_PROD || "https://tusistema.es",
+      "https://www.tusistema.es",
     ];
 
     const corsOptions = {
@@ -58,7 +59,7 @@ class Server {
 
   private routes() {
     this.app.use("/api/users", userRoutes);
-
+    this.app.use("/api/articles", articleRoutes);
   }
 
   private setupSwagger() {
