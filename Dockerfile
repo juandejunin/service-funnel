@@ -1,4 +1,4 @@
- # ---- Etapa de producción ----
+# ---- Etapa de producción ----
 FROM node:20-alpine
 
 # Directorio de trabajo
