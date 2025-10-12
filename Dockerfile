@@ -1,8 +1,4 @@
-<<<<<<< HEAD
 # ---- Etapa de producción ----
-=======
- ---- Etapa de producción ----
->>>>>>> 049311de0bbeefca62cbcc3195b4c250594385cf
 FROM node:20-alpine
 
 # Directorio de trabajo
