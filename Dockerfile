@@ -1,40 +1,22 @@
-# Usamos una imagen base ligera con Node.js
-FROM node:20-alpine AS builder
-
-# Configuramos directorio de trabajo
-WORKDIR /app
-
-# Copiamos package.json y tsconfig para instalar dependencias y build
-COPY package*.json ./
-COPY tsconfig*.json ./
-
-# Instalamos todas las dependencias (dev incluidas)
-RUN npm install
-
-# Copiamos solo el código fuente
-COPY src ./src
-COPY files ./files
-
-# Compilamos TypeScript
-RUN npm run build
-
-# ---- Etapa final (producción) ----
+ ---- Etapa de producción ----
 FROM node:20-alpine
+
+# Directorio de trabajo
 WORKDIR /app
 
-# Copiamos build y archivos necesarios
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/package*.json ./
-COPY --from=builder /app/files ./files
+# Copiamos package.json y package-lock.json
+COPY package*.json ./
 
-# Instalamos solo deps de producción
+# Instalamos solo dependencias de producción
 RUN npm install --omit=dev
 
-# Copiamos archivo de variables de entorno
-COPY .env ./
+# Copiamos los archivos compilados y necesarios (dist y files)
+COPY dist ./dist
+COPY files ./files
 
-# Exponemos el puerto
+# Exponemos el puerto del backend
 EXPOSE 3000
 
-# Comando para ejecutar la app
+# Comando para iniciar la aplicación
 CMD ["node", "dist/index.js"]
+
